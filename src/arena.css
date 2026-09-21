@@ -828,7 +828,7 @@ body.fullscreen-fit .arcade-stage,
 .history-grid-20 {
   flex: 1;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   grid-template-rows: repeat(5, 1fr);
   gap: 4px;
   padding: 8px 4px;
@@ -837,8 +837,8 @@ body.fullscreen-fit .arcade-stage,
 }
 
 .history-token {
-  width: clamp(24px, 2.7vw, 34px);
-  height: clamp(24px, 2.7vw, 34px);
+  width: clamp(36px, 3.9vw, 50px);
+  height: clamp(36px, 3.9vw, 50px);
   border-radius: 50%;
   background: radial-gradient(circle at 35% 30%, #ffffff 0%, #e6dcd0 65%, #c5b4a0 100%);
   border: 1.5px solid #dca74d;
@@ -847,12 +847,12 @@ body.fullscreen-fit .arcade-stage,
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  padding: 2px;
+  padding: 1px;
 }
 
 .history-token img {
-  width: 90%;
-  height: 90%;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
 }
 

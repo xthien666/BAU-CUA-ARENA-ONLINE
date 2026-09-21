@@ -555,28 +555,29 @@ function renderHistory() {
   if (!historyGrid) return;
 
   const validRounds = room.history.filter(round => !bowl.covered() || round.id !== room.roundId);
-  const allDiceResults = [];
-  for (const r of validRounds) {
-    if (Array.isArray(r.dice)) {
-      for (const d of r.dice) allDiceResults.push(d);
-    }
-  }
+  const recentRounds = validRounds.slice(0, 5);
 
-  // Lấy 20 kết quả xúc xắc gần nhất
-  const recent20 = allDiceResults.slice(-20);
-  const totalSlots = 20;
   const items = [];
 
-  for (let i = 0; i < totalSlots; i++) {
-    const symbolId = recent20[i];
-    const token = element('div', `history-token${symbolId ? '' : ' empty'}`);
-    if (symbolId) {
+  for (const round of recentRounds) {
+    if (!Array.isArray(round.dice)) continue;
+
+    for (const symbolId of round.dice.slice(0, 3)) {
+      const token = element('div', 'history-token');
+
       const img = element('img');
       img.src = `/assets/arena/symbol-${symbolId}.png`;
       img.alt = symbols.get(symbolId)?.name || symbolId;
+
       token.append(img);
+      items.push(token);
     }
-    items.push(token);
+  }
+
+  const totalSlots = 15;
+
+  while (items.length < totalSlots) {
+    items.push(element('div', 'history-token empty'));
   }
 
   historyGrid.replaceChildren(...items);
