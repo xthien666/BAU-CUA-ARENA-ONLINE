@@ -829,6 +829,17 @@ const isStandaloneDisplay = () => window.matchMedia('(display-mode: standalone)'
   window.matchMedia('(display-mode: fullscreen)').matches || navigator.standalone === true;
 const currentFullscreenElement = () => document.fullscreenElement || document.webkitFullscreenElement ||
   document.webkitCurrentFullScreenElement;
+if (isIOSDevice && !isStandaloneDisplay()) {
+  // 1. Ẩn nút "Toàn Màn Hình" vì Safari iOS không cho phép API này
+  if (ui['request-fullscreen']) {
+    ui['request-fullscreen'].style.display = 'none';
+  }
+  // 2. Đổi câu thông báo để hướng dẫn người dùng iPhone xoay tay
+  const promptText = document.querySelector('.rotate-card p');
+  if (promptText) {
+    promptText.innerHTML = 'Hệ điều hành iOS không hỗ trợ xoay tự động.<br>Vui lòng tắt <b>Khóa Hướng Dọc</b> và xoay ngang điện thoại bằng tay.';
+  }
+}
 
 function syncFullscreenControls() {
   if (isStandaloneDisplay()) document.body.classList.add('fullscreen-fit');
@@ -919,8 +930,10 @@ for (const eventName of ['fullscreenchange', 'webkitfullscreenchange']) {
 
 function handleViewportOrientationChange() {
   if (window.matchMedia('(orientation: landscape)').matches) document.body.classList.remove('force-landscape');
-  syncAppViewport();
-  syncFullscreenControls();
+  setTimeout(() => {
+    syncAppViewport();
+    syncFullscreenControls();
+  }, 150);
 }
 
 window.addEventListener('orientationchange', handleViewportOrientationChange);
