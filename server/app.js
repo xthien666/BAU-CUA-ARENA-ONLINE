@@ -138,6 +138,61 @@ export async function createGameServer(options = {}) {
         acknowledge(game.handle(socket.id, event, payload));
       });
     }
+
+    socket.on('client_throw_item', (payload, acknowledge) => {
+      try {
+        if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+          if (typeof acknowledge === 'function') acknowledge({ ok: false, error: 'Dữ liệu không hợp lệ.' });
+          return;
+        }
+
+        const membership = game.memberships.get(socket.id);
+        const roomCode = payload.roomId || payload.roomCode || membership?.code;
+        if (!roomCode) {
+          if (typeof acknowledge === 'function') acknowledge({ ok: false, error: 'Bạn chưa tham gia phòng.' });
+          return;
+        }
+
+        const room = game.rooms.get(roomCode);
+        if (!room) {
+          if (typeof acknowledge === 'function') acknowledge({ ok: false, error: 'Không tìm thấy phòng.' });
+          return;
+        }
+
+        const allowedItems = ['egg', 'tomato', 'flower'];
+        const itemType = allowedItems.includes(payload.itemType) ? payload.itemType : 'egg';
+
+        const eventData = {
+          fromId: payload.fromId || membership?.playerId || socket.id,
+          toId: payload.toId || null,
+          itemType,
+          startPos: {
+            x: Number(payload.startPos?.x) || 0,
+            y: Number(payload.startPos?.y) || 0,
+          },
+          endPos: {
+            x: Number(payload.endPos?.x) || 0,
+            y: Number(payload.endPos?.y) || 0,
+          },
+          roomId: roomCode,
+          timestamp: Date.now(),
+        };
+
+        for (const player of room.players.values()) {
+          if (player.connected && player.socketId) {
+            io.to(player.socketId).emit('server_item_thrown', eventData);
+          }
+        }
+
+        if (typeof acknowledge === 'function') {
+          acknowledge({ ok: true, data: eventData });
+        }
+      } catch (error) {
+        console.error('Lỗi client_throw_item:', error);
+        if (typeof acknowledge === 'function') acknowledge({ ok: false, error: 'Có lỗi xảy ra khi ném vật phẩm.' });
+      }
+    });
+
     socket.on('disconnect', () => game.disconnect(socket.id));
   });
 
