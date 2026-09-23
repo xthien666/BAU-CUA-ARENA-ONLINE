@@ -52,9 +52,9 @@ body {
   padding: 24px;
 }
 
-@media (orientation: portrait) and (max-width: 950px) {
+@media (pointer: coarse) and (orientation: portrait) and (max-width: 950px) {
   .rotate-prompt {
-    display: flex;
+    display: flex !important;
   }
 }
 
@@ -2225,5 +2225,107 @@ summary:focus-visible {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* ===================================================================
+   FIX DÀNH RIÊNG CHO IPHONE: ÉP ẨN MÀN CHẮN KHI ĐÃ XOAY NGANG, ÉP VỪA KHÍT MÀN HÌNH VÀ CHỐNG CẮT
+   Được đặt ở cuối file để đảm bảo CSS ưu tiên ghi đè.
+   =================================================================== */
+@media (max-width: 950px) and (orientation: landscape) {
+
+  /* 1. Ẩn màn chắn xoay ngang khi đã nằm ngang */
+  .rotate-prompt,
+  #rotate-prompt {
+    display: none !important;
+    pointer-events: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    z-index: -1 !important;
+  }
+
+  /* 2. Sảnh chờ (Lobby): Tràn viền, cuộn toàn màn hình, chống zoom input */
+  .arcade-viewport {
+    width: 100vw !important;
+    width: 100dvw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    align-items: flex-start !important;
+    padding: 0 !important;
+  }
+
+  .lobby-overlay {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    width: 100dvw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow-y: scroll !important;
+    /* Dùng scroll để ép Safari iOS luôn bật thanh cuộn */
+    -webkit-overflow-scrolling: touch !important;
+    /* Tạo quán tính cuộn mượt mà */
+    touch-action: pan-y !important;
+    /* Cho phép ngón tay vuốt dọc tuyệt đối */
+    padding: 30px max(15px, env(safe-area-inset-right)) 50px max(15px, env(safe-area-inset-left)) !important;
+    z-index: 99999 !important;
+  }
+
+  .lobby-box {
+    margin: auto !important;
+    /* Giúp bảng lobby tự động căn giữa khi vừa màn hình, và cho phép cuộn khi màn hình quá thấp */
+    width: min(88%, 420px) !important;
+    transform: none !important;
+    padding: 14px 20px !important;
+    box-sizing: border-box !important;
+  }
+
+  .lobby-logo {
+    max-height: 38px !important;
+  }
+
+  .input-group input,
+  .join-row input {
+    font-size: 16px !important;
+  }
+
+  /* 4. Bảng Modal cài đặt: Ép thu nhỏ và mở khóa thanh cuộn triệt để */
+  dialog.custom-modal,
+  .custom-modal {
+    position: fixed !important;
+    inset: auto !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    width: auto !important;
+    max-width: 90vw !important;
+    max-height: 85vh !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    z-index: 999999 !important;
+  }
+
+  .custom-modal::backdrop {
+    background: rgba(0, 0, 0, 0.75) !important;
+    backdrop-filter: blur(4px) !important;
+  }
+
+  .modal-card {
+    width: 90vw !important;
+    max-width: 400px !important;
+    max-height: 80vh !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-y !important;
+    padding: 14px 18px !important;
+    box-sizing: border-box !important;
+    background: linear-gradient(145deg, #2b1510 0%, #140806 100%) !important;
+    border: 2px solid #ca9a47 !important;
+    border-radius: 16px !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8) !important;
   }
 }
