@@ -192,6 +192,7 @@
           <!-- Nút Chat bên trái -->
           <button id="chat-toggle" class="chat-btn" type="button" title="Trò chuyện nhanh" aria-label="Chat">
             <img src="/assets/arena/icon-chat.png" alt="" aria-hidden="true" />
+            <span id="chat-badge" class="chat-badge" hidden>0</span>
           </button>
 
           <!-- Khay Chip cược với mũi tên chuyển động -->
@@ -221,6 +222,128 @@
             </button>
           </div>
         </footer>
+
+        <!-- Bong bóng xem trước tin nhắn nhanh khi đóng khung chat -->
+        <div id="chat-toast-bubble" class="chat-toast-bubble" hidden></div>
+
+        <!-- Lớp hiển thị hiệu ứng biểu cảm bay nổi trên bàn cược -->
+        <div id="chat-reactions-overlay" class="chat-reactions-overlay" aria-hidden="true"></div>
+
+        <!-- KHUNG CHAT & BIỂU CẢM TƯƠNG TÁC HOÀNG GIA -->
+        <aside id="chat-drawer" class="chat-drawer" aria-label="Khung trò chuyện và biểu cảm" hidden>
+          <div class="chat-drawer-header">
+            <div class="chat-header-title">
+              <span class="chat-header-icon" aria-hidden="true">💬</span>
+              <span class="gold-title">TRÒ CHUYỆN PHÒNG</span>
+            </div>
+            <button id="close-chat" type="button" class="btn-chat-close" aria-label="Đóng khung chat">×</button>
+          </div>
+
+          <!-- Danh sách tin nhắn cuộc trò chuyện -->
+          <div id="chat-messages" class="chat-messages-container" role="log" aria-live="polite">
+            <div class="chat-system-msg">
+              <span>✦ Chào mừng đến Bầu Cua Arena! Hãy cùng trò chuyện và chia sẻ biểu cảm may mắn nhé.</span>
+            </div>
+          </div>
+
+          <!-- Thanh Biểu Cảm Nhanh & Câu Thoại (1 chạm gửi ngay) -->
+          <div class="chat-quick-reactions">
+            <div class="quick-emotes-scroll" role="toolbar" aria-label="Biểu cảm nhanh">
+              <button type="button" class="quick-emote-item" data-emote="😂" title="Cười lớn">😂</button>
+              <button type="button" class="quick-emote-item" data-emote="😭" title="Khóc ròng">😭</button>
+              <button type="button" class="quick-emote-item" data-emote="🔥" title="Bốc lửa">🔥</button>
+              <button type="button" class="quick-emote-item" data-emote="🤑" title="Phát tài">🤑</button>
+              <button type="button" class="quick-emote-item" data-emote="👑" title="Đỉnh chóp">👑</button>
+              <button type="button" class="quick-emote-item" data-emote="🥳" title="Ăn mừng">🥳</button>
+              <button type="button" class="quick-emote-item" data-emote="🦀" title="Cua">🦀</button>
+              <button type="button" class="quick-emote-item" data-emote="🎲" title="Xúc xắc">🎲</button>
+            </div>
+            <div class="quick-phrases-scroll" role="toolbar" aria-label="Câu thoại nhanh">
+              <button type="button" class="quick-phrase-item" data-phrase="Tất tay Bầu! 🎃">Tất tay Bầu! 🎃</button>
+              <button type="button" class="quick-phrase-item" data-phrase="Cầu Gà đang đỏ! 🐔">Cầu Gà đang đỏ! 🐔</button>
+              <button type="button" class="quick-phrase-item" data-phrase="Về Cua chắc luôn! 🦀">Về Cua chắc luôn! 🦀</button>
+              <button type="button" class="quick-phrase-item" data-phrase="Cay thế nhờ 😂">Cay thế nhờ 😂</button>
+              <button type="button" class="quick-phrase-item" data-phrase="Xin 500k xu host ơi! 🪙">Xin 500k xu host ơi! 🪙</button>
+              <button type="button" class="quick-phrase-item" data-phrase="Lắc đều tay lên nào! 🎲">Lắc đều tay lên nào! 🎲</button>
+              <button type="button" class="quick-phrase-item" data-phrase="Uy tín luôn anh em! ✨">Uy tín luôn anh em! ✨</button>
+            </div>
+          </div>
+
+          <!-- Bảng chọn Emotion mở rộng (3 tab: Mặt cười, Linh vật Bầu Cua, Cổ vũ) -->
+          <div id="chat-emoji-panel" class="chat-emoji-panel" hidden>
+            <div class="emoji-tabs-bar">
+              <button type="button" class="emoji-tab-nav active" data-tab="faces">Mặt cười</button>
+              <button type="button" class="emoji-tab-nav" data-tab="symbols">Bầu Cua</button>
+              <button type="button" class="emoji-tab-nav" data-tab="gestures">Cổ vũ</button>
+            </div>
+            <div class="emoji-panes-wrapper">
+              <div id="emoji-pane-faces" class="emoji-pane active">
+                <span class="emoji-pick-btn" role="button" tabindex="0">😂</span>
+                <span class="emoji-pick-btn" role="button" tabindex="0">🤣</span>
+                <span class="emoji-pick-btn" role="button" tabindex="0">😆</span>
+                <span class="emoji-pick-btn" role="button" tabindex="0">🥳</span>
+                <span class="emoji-pick-btn" role="button" tabindex="0">😎</span>
+                <span class="emoji-pick-btn" role="button" tabindex="0">🤑</span>
+                <span class="emoji-pick-btn" role="button" tabindex="0">😭</span>
+                <span class="emoji-pick-btn" role="button" tabindex="0">😡</span>
+                <span class="emoji-pick-btn" role="button" tabindex="0">😱</span>
+                <span class="emoji-pick-btn" role="button" tabindex="0">🤯</span>
+                <span class="emoji-pick-btn" role="button" tabindex="0">🤔</span>
+                <span class="emoji-pick-btn" role="button" tabindex="0">🤩</span>
+                <span class="emoji-pick-btn" role="button" tabindex="0">🥺</span>
+                <span class="emoji-pick-btn" role="button" tabindex="0">😴</span>
+                <span class="emoji-pick-btn" role="button" tabindex="0">🤫</span>
+                <span class="emoji-pick-btn" role="button" tabindex="0">🤪</span>
+              </div>
+              <div id="emoji-pane-symbols" class="emoji-pane" hidden>
+                <span class="emoji-pick-btn" role="button" tabindex="0">🦌</span>
+                <span class="emoji-pick-btn" role="button" tabindex="0">🎃</span>
+                <span class="emoji-pick-btn" role="button" tabindex="0">🐔</span>
+                <span class="emoji-pick-btn" role="button" tabindex="0">🐟</span>
+                <span class="emoji-pick-btn" role="button" tabindex="0">🦀</span>
+                <span class="emoji-pick-btn" role="button" tabindex="0">🦐</span>
+                <span class="emoji-pick-btn" role="button" tabindex="0">🎲</span>
+                <span class="emoji-pick-btn" role="button" tabindex="0">🪙</span>
+                <span class="emoji-pick-btn" role="button" tabindex="0">💰</span>
+                <span class="emoji-pick-btn" role="button" tabindex="0">🧧</span>
+                <span class="emoji-pick-btn" role="button" tabindex="0">🏆</span>
+                <span class="emoji-pick-btn" role="button" tabindex="0">👑</span>
+                <span class="emoji-pick-btn" role="button" tabindex="0">🔥</span>
+                <span class="emoji-pick-btn" role="button" tabindex="0">🍀</span>
+                <span class="emoji-pick-btn" role="button" tabindex="0">✨</span>
+                <span class="emoji-pick-btn" role="button" tabindex="0">💥</span>
+              </div>
+              <div id="emoji-pane-gestures" class="emoji-pane" hidden>
+                <span class="emoji-pick-btn" role="button" tabindex="0">👍</span>
+                <span class="emoji-pick-btn" role="button" tabindex="0">👏</span>
+                <span class="emoji-pick-btn" role="button" tabindex="0">🤝</span>
+                <span class="emoji-pick-btn" role="button" tabindex="0">✌️</span>
+                <span class="emoji-pick-btn" role="button" tabindex="0">🙌</span>
+                <span class="emoji-pick-btn" role="button" tabindex="0">🙏</span>
+                <span class="emoji-pick-btn" role="button" tabindex="0">🥂</span>
+                <span class="emoji-pick-btn" role="button" tabindex="0">🎉</span>
+                <span class="emoji-pick-btn" role="button" tabindex="0">❤️</span>
+                <span class="emoji-pick-btn" role="button" tabindex="0">💯</span>
+                <span class="emoji-pick-btn" role="button" tabindex="0">💪</span>
+                <span class="emoji-pick-btn" role="button" tabindex="0">🫡</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Thanh nhập & gửi tin nhắn -->
+          <form id="chat-form" class="chat-form-bottom">
+            <button id="chat-emoji-toggle" type="button" class="btn-emoji-toggle" title="Biểu cảm" aria-label="Mở bảng biểu cảm">
+              <span aria-hidden="true">😊</span>
+            </button>
+            <input id="chat-input" name="chatText" type="text" placeholder="Gõ tin nhắn..." maxlength="100" autocomplete="off" />
+            <button id="chat-send-btn" type="submit" class="btn-chat-send" title="Gửi" aria-label="Gửi tin nhắn">
+              <span>Gửi</span>
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+              </svg>
+            </button>
+          </form>
+        </aside>
 
         <!-- THÔNG BÁO TRẠNG THÁI NỔI TRONG PHÒNG -->
         <p id="room-notice" class="floating-room-notice" role="status" aria-live="polite" hidden>Đang đồng bộ bàn chơi…

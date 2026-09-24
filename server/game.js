@@ -49,6 +49,7 @@ export class GameService {
     this.maxRooms = options.maxRooms ?? 100;
     this.randomIntFn = options.randomIntFn ?? randomInt;
     this.onState = options.onState ?? (() => {});
+    this.onChatMessage = options.onChatMessage ?? (() => {});
     this.onReplace = options.onReplace ?? (() => {});
     this.cleanupTimer = setInterval(() => this.cleanup(), options.cleanupIntervalMs ?? 30_000);
     this.cleanupTimer.unref();
@@ -111,6 +112,7 @@ export class GameService {
         betTotal: totalBets(entry.bets), eligible: entry.eligible,
       })),
       boardTotals, dice: room.phase === 'result' ? [...room.dice] : [],
+      messages: room.messages ? [...room.messages] : [],
       history: structuredClone(room.history).map(round => {
         if (player.id !== room.hostId) delete round.demo;
         return round;
@@ -153,6 +155,7 @@ export class GameService {
       }
       if (event === 'room:sync') return this.success(room, player, true);
       if (event === 'room:leave') return this.leave(room, player);
+      if (event === 'chat:send') return this.sendChat(room, player, payload);
       requireCondition(MUTATIONS.has(event), 'UNKNOWN_COMMAND', 'Lệnh không được hỗ trợ.');
       requireCondition(typeof payload.requestId === 'string' && payload.requestId.length > 0 && payload.requestId.length <= 100,
         'INVALID_REQUEST', 'Mã yêu cầu không hợp lệ.');
@@ -201,6 +204,7 @@ export class GameService {
     const room = {
       code, gameId: randomUUID(), hostId: player.id, players: new Map(), phase: 'waiting',
       roundNumber: 0, roundId: null, revision: 0, dice: [], history: [],
+      messages: [],
       revealTimer: null, hostTimer: null, updatedAt: Date.now(),
       phaseTimer: null, deadline: null, remainingMs: null, paused: false, locked: false,
       bettingMs: this.bettingMs,
@@ -268,6 +272,45 @@ export class GameService {
     if (room.players.size === 0) this.deleteRoom(room);
     else this.changed(room);
     return { ok: true, state: null };
+  }
+
+  sendChat(room, player, payload) {
+    requireCondition(payload && typeof payload === 'object', 'INVALID_PAYLOAD', 'Dữ liệu gửi lên không hợp lệ.');
+    const now = Date.now();
+    if (player.lastChatAt && now - player.lastChatAt < 250) {
+      throw new GameError('CHAT_RATE_LIMIT', 'Bạn gửi tin nhắn quá nhanh. Vui lòng chờ giây lát.');
+    }
+    player.lastChatAt = now;
+
+    const rawText = typeof payload.text === 'string' ? payload.text.trim().normalize('NFC') : '';
+    const rawEmotion = typeof payload.emotion === 'string' ? payload.emotion.trim() : '';
+
+    requireCondition(rawText.length > 0 || rawEmotion.length > 0, 'INVALID_CHAT', 'Nội dung tin nhắn hoặc biểu cảm không được để trống.');
+    requireCondition(rawText.length <= 120, 'INVALID_CHAT', 'Tin nhắn tối đa 120 ký tự.');
+    requireCondition(!/[\p{Cc}\p{Cf}]/u.test(rawText.replace(/\r|\n/g, '')), 'INVALID_CHAT', 'Tin nhắn chứa ký tự không hợp lệ.');
+
+    const message = {
+      id: randomUUID(),
+      senderId: player.id,
+      senderName: player.name,
+      isHost: player.id === room.hostId,
+      text: rawText || null,
+      emotion: rawEmotion || null,
+      type: rawEmotion && !rawText ? 'emotion' : 'text',
+      time: now,
+    };
+
+    if (!room.messages) room.messages = [];
+    room.messages.push(message);
+    if (room.messages.length > 50) room.messages.shift();
+
+    for (const p of room.players.values()) {
+      if (p.connected && p.socketId) {
+        this.onChatMessage(p.socketId, message);
+      }
+    }
+
+    return { ok: true, message };
   }
 
   removePlayer(room, player) {

@@ -135,6 +135,17 @@ function playSound(type) {
         osc.start(now + idx * 0.08);
         osc.stop(now + idx * 0.08 + 0.35);
       });
+    } else if (type === 'chat') {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, now);
+      osc.frequency.exponentialRampToValueAtTime(1320, now + 0.08);
+      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.08);
     }
   } catch { /* Ignored if audio permission is not yet granted */ }
 }
@@ -447,6 +458,7 @@ function applyState(next) {
   renderPlayers();
   renderResults();
   renderHistory();
+  if (Array.isArray(next.messages)) renderChatHistory(next.messages);
   renderControls();
 }
 
@@ -660,6 +672,7 @@ function clearRoom(message) {
   busy = false;
   acceptingMembership = false;
   forgetSession();
+  resetChat();
   ui.game.hidden = true;
   ui.home.hidden = false;
   renderControls();
@@ -752,6 +765,10 @@ socket.on('room:state', state => {
 socket.on('room:kicked', () => {
   connectionEpoch += 1;
   clearRoom('Bạn đã được đưa ra khỏi bàn chơi.');
+});
+
+socket.on('chat:message', message => {
+  handleIncomingChatMessage(message);
 });
 
 function adminCommand(event, payload = {}, message) {
@@ -1033,6 +1050,244 @@ if (ui['leave-room']) {
     } catch (e) {
       notice(e.message, true);
     }
+  });
+}
+
+// ===================================================================
+// QUẢN LÝ KHUNG CHAT & BIỂU CẢM HOÀNG GIA (CHAT & EMOTIONS)
+// ===================================================================
+const renderedMessageIds = new Set();
+let chatUnreadCount = 0;
+let chatToastTimer = null;
+let chatDrawerVisible = false;
+
+function scrollChatToBottom() {
+  if (ui['chat-messages']) {
+    ui['chat-messages'].scrollTop = ui['chat-messages'].scrollHeight;
+  }
+}
+
+function toggleChatDrawer(forceOpen) {
+  chatDrawerVisible = typeof forceOpen === 'boolean' ? forceOpen : !chatDrawerVisible;
+  if (ui['chat-drawer']) ui['chat-drawer'].hidden = !chatDrawerVisible;
+  if (chatDrawerVisible) {
+    chatUnreadCount = 0;
+    if (ui['chat-badge']) {
+      ui['chat-badge'].hidden = true;
+      ui['chat-badge'].textContent = '0';
+    }
+    if (ui['chat-toast-bubble']) ui['chat-toast-bubble'].hidden = true;
+    scrollChatToBottom();
+    if (ui['chat-input'] && !('ontouchstart' in window)) ui['chat-input'].focus();
+  }
+}
+
+function renderChatMessage(msg, autoScroll = true) {
+  if (!ui['chat-messages'] || !msg?.id || renderedMessageIds.has(msg.id)) return;
+  renderedMessageIds.add(msg.id);
+
+  const isMe = Boolean(room && msg.senderId === room.you.id);
+  const row = element('div', `chat-msg-row ${isMe ? 'is-me' : 'is-other'}`);
+
+  const sender = element('div', 'chat-msg-sender');
+  if (msg.isHost) {
+    const crown = element('span', 'chat-host-crown', '👑');
+    sender.append(crown);
+  }
+  sender.append(document.createTextNode(isMe ? 'Bạn' : (msg.senderName || 'Người chơi')));
+  row.append(sender);
+
+  const isEmotionOnly = Boolean(msg.emotion && !msg.text);
+  const bubble = element('div', `chat-bubble ${isEmotionOnly ? 'is-emotion-only' : ''}`);
+  if (isEmotionOnly) {
+    bubble.textContent = msg.emotion;
+  } else {
+    bubble.textContent = msg.emotion ? `${msg.emotion} ${msg.text || ''}` : (msg.text || '');
+  }
+  row.append(bubble);
+
+  const timeStr = new Date(msg.time || Date.now()).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+  const timeElem = element('span', 'chat-time', timeStr);
+  row.append(timeElem);
+
+  ui['chat-messages'].append(row);
+  if (autoScroll) scrollChatToBottom();
+}
+
+function renderChatHistory(messages) {
+  if (!Array.isArray(messages)) return;
+  for (const msg of messages) renderChatMessage(msg, false);
+  scrollChatToBottom();
+}
+
+function spawnFloatingReaction(emotion, senderName) {
+  const overlay = ui['chat-reactions-overlay'];
+  if (!overlay || !emotion) return;
+
+  const reaction = element('div', 'floating-reaction');
+  const leftPos = Math.round(15 + Math.random() * 65);
+  const driftX = Math.round((Math.random() - 0.5) * 80);
+  reaction.style.left = `${leftPos}%`;
+  reaction.style.bottom = '12%';
+  reaction.style.setProperty('--drift-x', `${driftX}px`);
+
+  const emote = element('span', 'floating-reaction-emote', emotion);
+  reaction.append(emote);
+
+  if (senderName) {
+    const sender = element('span', 'floating-reaction-sender', senderName);
+    reaction.append(sender);
+  }
+
+  overlay.append(reaction);
+  setTimeout(() => reaction.remove(), 2800);
+}
+
+function showChatToast(msg) {
+  if (chatDrawerVisible) return;
+  chatUnreadCount += 1;
+  if (ui['chat-badge']) {
+    ui['chat-badge'].textContent = chatUnreadCount > 9 ? '9+' : String(chatUnreadCount);
+    ui['chat-badge'].hidden = false;
+  }
+  const toast = ui['chat-toast-bubble'];
+  if (toast) {
+    toast.replaceChildren();
+    const strong = element('strong', '', `${msg.senderName || 'Người chơi'}: `);
+    toast.append(strong);
+    const content = msg.emotion ? `${msg.emotion} ${msg.text || ''}` : (msg.text || '');
+    toast.append(document.createTextNode(content));
+    toast.hidden = false;
+    clearTimeout(chatToastTimer);
+    chatToastTimer = setTimeout(() => { toast.hidden = true; }, 3200);
+  }
+}
+
+function handleIncomingChatMessage(msg) {
+  if (!msg) return;
+  renderChatMessage(msg, true);
+  if (msg.emotion) {
+    spawnFloatingReaction(msg.emotion, msg.senderName);
+  }
+  if (!chatDrawerVisible && (!room || msg.senderId !== room.you.id)) {
+    showChatToast(msg);
+  }
+  playSound('chat');
+}
+
+async function sendChatMessage(payload) {
+  if (!room || !synced || !socket.connected) {
+    notice('Bạn cần vào phòng để gửi trò chuyện.', true);
+    return;
+  }
+  try {
+    await send('chat:send', payload);
+  } catch (err) {
+    notice(err.message || 'Không thể gửi tin nhắn.', true);
+  }
+}
+
+function resetChat() {
+  renderedMessageIds.clear();
+  chatUnreadCount = 0;
+  chatDrawerVisible = false;
+  if (ui['chat-drawer']) ui['chat-drawer'].hidden = true;
+  if (ui['chat-badge']) {
+    ui['chat-badge'].hidden = true;
+    ui['chat-badge'].textContent = '0';
+  }
+  if (ui['chat-toast-bubble']) ui['chat-toast-bubble'].hidden = true;
+  if (ui['chat-reactions-overlay']) ui['chat-reactions-overlay'].replaceChildren();
+  if (ui['chat-messages']) {
+    ui['chat-messages'].replaceChildren(
+      element('div', 'chat-system-msg', '✦ Chào mừng đến Bầu Cua Arena! Hãy cùng trò chuyện và chia sẻ biểu cảm may mắn nhé.')
+    );
+  }
+}
+
+// Bật/tắt khung Chat
+if (ui['chat-toggle']) {
+  ui['chat-toggle'].addEventListener('click', e => {
+    e.stopPropagation();
+    toggleChatDrawer();
+  });
+}
+if (ui['close-chat']) {
+  ui['close-chat'].addEventListener('click', () => toggleChatDrawer(false));
+}
+
+// Đóng khung Chat khi bấm ra ngoài
+document.addEventListener('click', e => {
+  if (!chatDrawerVisible) return;
+  const drawer = ui['chat-drawer'];
+  const toggleBtn = ui['chat-toggle'];
+  if (drawer && !drawer.contains(e.target) && (!toggleBtn || !toggleBtn.contains(e.target))) {
+    toggleChatDrawer(false);
+  }
+});
+
+// Biểu cảm nhanh 1 chạm
+document.querySelectorAll('.quick-emote-item').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const emote = btn.dataset.emote;
+    if (emote) sendChatMessage({ emotion: emote });
+  });
+});
+
+// Câu thoại nhanh
+document.querySelectorAll('.quick-phrase-item').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const phrase = btn.dataset.phrase;
+    if (phrase) sendChatMessage({ text: phrase });
+  });
+});
+
+// Bật/tắt khay Emotion mở rộng
+if (ui['chat-emoji-toggle'] && ui['chat-emoji-panel']) {
+  ui['chat-emoji-toggle'].addEventListener('click', e => {
+    e.stopPropagation();
+    ui['chat-emoji-panel'].hidden = !ui['chat-emoji-panel'].hidden;
+  });
+}
+
+// Chuyển tab trong bảng Emotion
+document.querySelectorAll('.emoji-tab-nav').forEach(tabBtn => {
+  tabBtn.addEventListener('click', () => {
+    document.querySelectorAll('.emoji-tab-nav').forEach(b => b.classList.remove('active'));
+    tabBtn.classList.add('active');
+    const tabName = tabBtn.dataset.tab;
+    document.querySelectorAll('.emoji-pane').forEach(pane => {
+      pane.hidden = pane.id !== `emoji-pane-${tabName}`;
+    });
+  });
+});
+
+// Bấm chọn biểu cảm từ bảng Emotion
+document.querySelectorAll('.emoji-pick-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const emote = btn.textContent.trim();
+    if (!emote) return;
+    const input = ui['chat-input'];
+    if (input && input.value.trim().length > 0) {
+      input.value += ` ${emote} `;
+      input.focus();
+    } else {
+      // Input đang trống: gửi ngay thành biểu cảm sống động
+      sendChatMessage({ emotion: emote });
+    }
+  });
+});
+
+// Gửi tin nhắn qua biểu mẫu Chat
+if (ui['chat-form'] && ui['chat-input']) {
+  ui['chat-form'].addEventListener('submit', e => {
+    e.preventDefault();
+    const text = ui['chat-input'].value.trim();
+    if (text) {
+      sendChatMessage({ text });
+      ui['chat-input'].value = '';
+    }
+    if (ui['chat-emoji-panel']) ui['chat-emoji-panel'].hidden = true;
   });
 }
 
