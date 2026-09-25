@@ -2,6 +2,7 @@ import { io } from 'socket.io-client';
 import './style.css';
 import './arena.css';
 import { createBowlReveal } from './bowl.js';
+import { initTetAmbient } from './tet-ambient.js';
 
 const ui = Object.fromEntries([...document.querySelectorAll('[id]')].map(element => [element.id, element]));
 const sessionKey = 'bau-cua-arena-session';
@@ -135,8 +136,107 @@ function playSound(type) {
         osc.start(now + idx * 0.08);
         osc.stop(now + idx * 0.08 + 0.35);
       });
+    } else if (type === 'egg') {
+      const clickOsc = ctx.createOscillator();
+      const clickGain = ctx.createGain();
+      clickOsc.type = 'triangle';
+      clickOsc.frequency.setValueAtTime(1600, now);
+      clickOsc.frequency.exponentialRampToValueAtTime(300, now + 0.03);
+      clickGain.gain.setValueAtTime(0.25, now);
+      clickGain.gain.exponentialRampToValueAtTime(0.01, now + 0.03);
+      clickOsc.connect(clickGain).connect(ctx.destination);
+      clickOsc.start(now);
+      clickOsc.stop(now + 0.03);
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(350, now);
+      osc.frequency.exponentialRampToValueAtTime(95, now + 0.12);
+      gain.gain.setValueAtTime(0.3, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.12);
+
+      const bufferSize = Math.floor(ctx.sampleRate * 0.09);
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.value = 750;
+      filter.Q.value = 2;
+      const noiseGain = ctx.createGain();
+      noiseGain.gain.setValueAtTime(0.28, now);
+      noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.09);
+      noise.connect(filter).connect(noiseGain).connect(ctx.destination);
+      noise.start(now);
+    } else if (type === 'tomato') {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(260, now);
+      osc.frequency.exponentialRampToValueAtTime(65, now + 0.16);
+      gain.gain.setValueAtTime(0.35, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.16);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.16);
+
+      const bufferSize = Math.floor(ctx.sampleRate * 0.13);
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(950, now);
+      filter.frequency.exponentialRampToValueAtTime(180, now + 0.13);
+      const noiseGain = ctx.createGain();
+      noiseGain.gain.setValueAtTime(0.35, now);
+      noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.13);
+      noise.connect(filter).connect(noiseGain).connect(ctx.destination);
+      noise.start(now);
+    } else if (type === 'flower') {
+      [587.33, 739.99, 880, 1174.66, 1479.98].forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        const noteTime = now + idx * 0.065;
+        gain.gain.setValueAtTime(0, noteTime);
+        gain.gain.linearRampToValueAtTime(0.18, noteTime + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, noteTime + 0.45);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(noteTime);
+        osc.stop(noteTime + 0.48);
+      });
     }
   } catch { /* Ignored if audio permission is not yet granted */ }
+}
+
+function playItemSound(itemType) {
+  if (!audioEnabled) return;
+  const audioFiles = {
+    egg: ['/assets/audio/egg-splat.mp3', '/assets/audio/item-egg.mp3'],
+    tomato: ['/assets/audio/tomato-splat.mp3', '/assets/audio/item-tomato.mp3'],
+    flower: ['/assets/audio/flower-gift.mp3', '/assets/audio/item-flower.mp3', '/assets/audio/flower.mp3'],
+  };
+  const candidates = audioFiles[itemType] || [];
+  for (const src of candidates) {
+    try {
+      const audio = new Audio(src);
+      audio.volume = 0.7;
+      const playPromise = audio.play();
+      if (playPromise?.catch) playPromise.catch(() => {});
+      break;
+    } catch { }
+  }
+  playSound(itemType);
 }
 
 const bowl = createBowlReveal(ui, {
@@ -406,6 +506,8 @@ function applyState(next) {
 
   const you = room.players.find(player => player.id === room.you.id);
   ui['player-display-name'].textContent = you?.name || 'Ngọc Anh';
+  const profileWrap = document.querySelector('.user-profile .profile-avatar-wrap');
+  if (profileWrap) profileWrap.dataset.playerId = room.you.id;
   ui['round-number'].textContent = `PHIÊN #${room.roundNumber || 158326}`;
 
   const phaseNames = {
@@ -492,6 +594,7 @@ function renderPlayers() {
 
   // Kết hợp người chơi thật và danh sách VIP mô phỏng đẹp mắt
   const realPlayers = room.players.map((p, idx) => ({
+    id: p.id,
     name: p.name,
     vip: Math.max(1, 8 - idx),
     balance: config?.balanceMode === 'available' ? p.balance : Math.max(0, p.balance - (p.betTotal || 0)),
@@ -506,6 +609,7 @@ function renderPlayers() {
     for (const mock of MOCK_VIPS) {
       if (!displayList.some(p => p.name === mock.name)) {
         displayList.push({
+          id: `mock-${mock.name}`,
           name: mock.name,
           vip: mock.vip,
           balance: mock.balance,
@@ -519,14 +623,27 @@ function renderPlayers() {
   }
 
   ui['player-list'].replaceChildren(...displayList.map(player => {
-    const row = element('div', `vip-player-row${player.isMe ? ' is-me' : ''}`);
+    const isInteractive = !player.isMe;
+    const row = element('div', `vip-player-row${player.isMe ? ' is-me' : ''}${isInteractive ? ' interactive-player' : ''}`);
+    row.dataset.playerId = player.id;
+    row.dataset.playerName = player.name;
 
-    const avatarWrap = element('div', 'vip-player-avatar-wrap');
+    const avatarWrap = element('div', `vip-player-avatar-wrap${isInteractive ? ' interactive-avatar' : ''}`);
+    avatarWrap.dataset.playerId = player.id;
+    avatarWrap.dataset.playerName = player.name;
     avatarWrap.append(element('div', 'vip-crown-mini', '👑'));
     const img = element('img', 'vip-player-avatar');
     img.src = player.avatar;
     img.alt = player.name;
     avatarWrap.append(img);
+
+    if (isInteractive) {
+      row.title = `Chạm để tương tác với ${player.name} (ném trứng, cà chua, tặng hoa)`;
+      row.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openItemPicker(player, avatarWrap);
+      });
+    }
 
     const meta = element('div', 'vip-player-meta');
     const levelTag = element('span', 'vip-level-tag', `VIP ${player.vip}`);
@@ -538,6 +655,345 @@ function renderPlayers() {
     row.append(avatarWrap, meta, coinSpan);
     return row;
   }));
+}
+
+// ===================================================================
+// TƯƠNG TÁC NGƯỜI CHƠI (NÉM TRỨNG, NÉM CÀ CHUA, TẶNG HOA)
+// ===================================================================
+let activeItemPicker = null;
+
+function closeItemPicker() {
+  if (activeItemPicker) {
+    activeItemPicker.remove();
+    activeItemPicker = null;
+  }
+}
+
+document.addEventListener('pointerdown', event => {
+  if (activeItemPicker && !activeItemPicker.contains(event.target)) {
+    closeItemPicker();
+  }
+});
+
+function openItemPicker(player, anchorElement) {
+  closeItemPicker();
+  if (!room) return;
+
+  const popover = element('div', 'item-picker-popover');
+  popover.setAttribute('role', 'dialog');
+  popover.setAttribute('aria-label', `Tương tác với ${player.name}`);
+
+  const header = element('div', 'item-picker-header');
+  const title = element('span', 'item-picker-title');
+  const strongName = element('strong', '', player.name);
+  title.append('Tương tác: ', strongName);
+
+  const closeBtn = element('button', 'item-picker-close', '×');
+  closeBtn.type = 'button';
+  closeBtn.setAttribute('aria-label', 'Đóng');
+  closeBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    closeItemPicker();
+  });
+  header.append(title, closeBtn);
+
+  const grid = element('div', 'item-picker-grid');
+  const items = [
+    { type: 'egg', label: 'Trứng', emoji: '🥚', title: 'Ném trứng thối' },
+    { type: 'tomato', label: 'Cà chua', emoji: '🍅', title: 'Ném cà chua chín' },
+    { type: 'flower', label: 'Tặng hoa', emoji: '🌹', title: 'Tặng hoa hồng' },
+  ];
+
+  for (const it of items) {
+    const btn = element('button', 'item-choice-btn');
+    btn.type = 'button';
+    btn.dataset.item = it.type;
+    btn.title = it.title;
+    btn.setAttribute('aria-label', it.title);
+
+    const emoji = element('span', 'item-emoji', it.emoji);
+    const label = element('span', 'item-label', it.label);
+    btn.append(emoji, label);
+
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      throwItemAtPlayer(player, it.type, anchorElement);
+      closeItemPicker();
+    });
+
+    grid.append(btn);
+  }
+
+  popover.append(header, grid);
+  document.body.append(popover);
+  activeItemPicker = popover;
+
+  const anchorRect = anchorElement.getBoundingClientRect();
+  const popoverRect = popover.getBoundingClientRect();
+  let left = anchorRect.right + 10;
+  let top = anchorRect.top + (anchorRect.height - popoverRect.height) / 2;
+
+  if (left + popoverRect.width > window.innerWidth - 10) {
+    left = Math.max(10, anchorRect.left - popoverRect.width - 10);
+  }
+  if (top < 10) top = 10;
+  if (top + popoverRect.height > window.innerHeight - 10) {
+    top = window.innerHeight - popoverRect.height - 10;
+  }
+
+  popover.style.left = `${Math.round(left)}px`;
+  popover.style.top = `${Math.round(top)}px`;
+}
+
+function throwItemAtPlayer(player, itemType, anchorElement) {
+  if (!room || !socket.connected) return;
+
+  const myAvatarEl = document.querySelector('.vip-player-row.is-me .vip-player-avatar-wrap') ||
+    document.querySelector('.user-profile .profile-avatar-wrap');
+  let startX = 60;
+  let startY = 50;
+  if (myAvatarEl) {
+    const r = myAvatarEl.getBoundingClientRect();
+    startX = r.left + r.width / 2;
+    startY = r.top + r.height / 2;
+  }
+
+  let endX = startX + 150;
+  let endY = startY;
+  if (anchorElement) {
+    const r = anchorElement.getBoundingClientRect();
+    endX = r.left + r.width / 2;
+    endY = r.top + r.height / 2;
+  }
+
+  const payload = {
+    fromId: room.you.id,
+    toId: player.id,
+    itemType,
+    startPos: { x: Math.round(startX), y: Math.round(startY) },
+    endPos: { x: Math.round(endX), y: Math.round(endY) },
+    roomId: room.code,
+  };
+
+  socket.emit('client_throw_item', payload);
+}
+
+function getInteractionLayer() {
+  let layer = document.getElementById('interaction-layer');
+  if (!layer) {
+    layer = element('div', 'interaction-layer');
+    layer.id = 'interaction-layer';
+    layer.setAttribute('aria-hidden', 'true');
+    document.body.append(layer);
+  }
+  return layer;
+}
+
+function animateItemThrown(data) {
+  const layer = getInteractionLayer();
+  const itemType = data.itemType || 'egg';
+
+  let fromX = Number(data.startPos?.x) || 50;
+  let fromY = Number(data.startPos?.y) || 50;
+  let toX = Number(data.endPos?.x) || 200;
+  let toY = Number(data.endPos?.y) || 200;
+
+  const fromEl = (data.fromId === room?.you?.id)
+    ? (document.querySelector('.vip-player-row.is-me .vip-player-avatar-wrap') || document.querySelector('.user-profile .profile-avatar-wrap'))
+    : document.querySelector(`[data-player-id="${data.fromId}"] .vip-player-avatar-wrap, [data-player-id="${data.fromId}"]`);
+
+  if (fromEl) {
+    const r = fromEl.getBoundingClientRect();
+    fromX = r.left + r.width / 2;
+    fromY = r.top + r.height / 2;
+  }
+
+  const toEl = (data.toId === room?.you?.id)
+    ? (document.querySelector('.vip-player-row.is-me .vip-player-avatar-wrap') || document.querySelector('.user-profile .profile-avatar-wrap'))
+    : document.querySelector(`[data-player-id="${data.toId}"] .vip-player-avatar-wrap, [data-player-id="${data.toId}"]`);
+
+  if (toEl) {
+    const r = toEl.getBoundingClientRect();
+    toX = r.left + r.width / 2;
+    toY = r.top + r.height / 2;
+  }
+
+  const projectile = element('div', 'thrown-projectile');
+  const emojis = { egg: '🥚', tomato: '🍅', flower: '🌹' };
+  projectile.textContent = emojis[itemType] || '🥚';
+  layer.append(projectile);
+
+  const dx = toX - fromX;
+  const dy = toY - fromY;
+  const distance = Math.hypot(dx, dy);
+  const arcHeight = Math.max(65, Math.min(220, distance * 0.35));
+  const cx = (fromX + toX) / 2;
+  const cy = Math.min(fromY, toY) - arcHeight;
+
+  const duration = Math.max(500, Math.min(850, 450 + distance * 0.5));
+  const startTime = performance.now();
+  let lastTrailTime = startTime;
+
+  function step(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(1, elapsed / duration);
+
+    const t = progress;
+    const invT = 1 - t;
+    const x = invT * invT * fromX + 2 * invT * t * cx + t * t * toX;
+    const y = invT * invT * fromY + 2 * invT * t * cy + t * t * toY;
+
+    const scale = 1 + Math.sin(t * Math.PI) * 0.45;
+    const rotDirection = dx >= 0 ? 1 : -1;
+    const rotation = rotDirection * (t * 720);
+
+    projectile.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${scale}) rotate(${rotation}deg)`;
+
+    if (now - lastTrailTime >= 40 && progress < 0.9) {
+      lastTrailTime = now;
+      const trail = element('div', 'item-trail-particle');
+      trail.style.left = `${x}px`;
+      trail.style.top = `${y}px`;
+      const trailColors = { egg: '#ffdf79', tomato: '#ff5e5e', flower: '#ff9ac9' };
+      trail.style.background = trailColors[itemType] || '#ffd46d';
+      const size = Math.round(6 + Math.random() * 6);
+      trail.style.width = `${size}px`;
+      trail.style.height = `${size}px`;
+      layer.append(trail);
+      setTimeout(() => trail.remove(), 320);
+    }
+
+    if (progress < 1) {
+      requestAnimationFrame(step);
+    } else {
+      projectile.remove();
+      createImpactEffect(itemType, toX, toY, toEl);
+    }
+  }
+
+  requestAnimationFrame(step);
+}
+
+function createImpactEffect(itemType, x, y, targetElement) {
+  playItemSound(itemType);
+
+  const layer = getInteractionLayer();
+  const splashBox = element('div', 'impact-splash-box');
+  splashBox.style.left = `${Math.round(x)}px`;
+  splashBox.style.top = `${Math.round(y)}px`;
+
+  if (itemType === 'egg') {
+    const content = element('div', 'egg-splash-content');
+    const white = element('div', 'egg-splat-white');
+    const yolk = element('div', 'egg-splat-yolk');
+    content.append(white, yolk);
+
+    const drip1 = element('div', 'egg-drip');
+    drip1.style.left = '38%';
+    drip1.style.top = '58%';
+    const drip2 = element('div', 'egg-drip');
+    drip2.style.left = '56%';
+    drip2.style.top = '52%';
+    drip2.style.animationDelay = '0.15s';
+    content.append(drip1, drip2);
+
+    const angles = [35, 125, 215, 305];
+    angles.forEach((deg, i) => {
+      const frag = element('div', 'shell-fragment');
+      const rad = (deg * Math.PI) / 180;
+      const dist = 32 + Math.random() * 18;
+      frag.style.setProperty('--dx', `${Math.cos(rad) * dist}px`);
+      frag.style.setProperty('--dy', `${Math.sin(rad) * dist}px`);
+      frag.style.setProperty('--rot', `${(i % 2 === 0 ? 1 : -1) * (180 + Math.random() * 180)}deg`);
+      frag.style.width = '10px';
+      frag.style.height = '12px';
+      frag.style.left = '45%';
+      frag.style.top = '45%';
+      content.append(frag);
+    });
+
+    splashBox.append(content);
+  } else if (itemType === 'tomato') {
+    const content = element('div', 'tomato-splash-content');
+    const sauce = element('div', 'tomato-sauce-main');
+    content.append(sauce);
+
+    const drip1 = element('div', 'tomato-drip');
+    drip1.style.left = '42%';
+    drip1.style.top = '62%';
+    const drip2 = element('div', 'tomato-drip');
+    drip2.style.left = '60%';
+    drip2.style.top = '56%';
+    drip2.style.animationDelay = '0.12s';
+    content.append(drip1, drip2);
+
+    for (let i = 0; i < 7; i++) {
+      const drop = element('div', 'tomato-sauce-drop');
+      const deg = (i * 51 + Math.random() * 20);
+      const rad = (deg * Math.PI) / 180;
+      const dist = 28 + Math.random() * 22;
+      drop.style.setProperty('--dx', `${Math.cos(rad) * dist}px`);
+      drop.style.setProperty('--dy', `${Math.sin(rad) * dist}px`);
+      drop.style.setProperty('--sc', `${(0.6 + Math.random() * 0.7).toFixed(2)}`);
+      const size = Math.round(8 + Math.random() * 7);
+      drop.style.width = `${size}px`;
+      drop.style.height = `${size}px`;
+      drop.style.left = '46%';
+      drop.style.top = '46%';
+      content.append(drop);
+    }
+
+    splashBox.append(content);
+  } else if (itemType === 'flower') {
+    const content = element('div', 'flower-splash-content');
+    const bouquet = element('div', 'flower-bouquet-center', '🌹');
+    content.append(bouquet);
+
+    const petalEmojis = ['🌸', '🌺', '🌹', '🌷'];
+    for (let i = 0; i < 8; i++) {
+      const petal = element('div', 'flower-petal', petalEmojis[i % petalEmojis.length]);
+      const deg = i * 45 + Math.random() * 20;
+      const rad = (deg * Math.PI) / 180;
+      const dist = 35 + Math.random() * 30;
+      petal.style.setProperty('--dx', `${Math.cos(rad) * dist}px`);
+      petal.style.setProperty('--dy', `${Math.sin(rad) * dist}px`);
+      petal.style.setProperty('--rot', `${(i % 2 === 0 ? 1 : -1) * (120 + Math.random() * 180)}deg`);
+      petal.style.animationDelay = `${(i * 0.05).toFixed(2)}s`;
+      content.append(petal);
+    }
+
+    const heartEmojis = ['💖', '❤️', '💕', '✨'];
+    for (let i = 0; i < 4; i++) {
+      const heart = element('div', 'flower-heart', heartEmojis[i % heartEmojis.length]);
+      const dx = (i - 1.5) * 22 + (Math.random() * 10 - 5);
+      heart.style.setProperty('--dx', `${dx}px`);
+      heart.style.animationDelay = `${(i * 0.12).toFixed(2)}s`;
+      content.append(heart);
+    }
+
+    splashBox.append(content);
+  }
+
+  layer.append(splashBox);
+
+  if (targetElement) {
+    const targetAvatar = targetElement.querySelector?.('.vip-player-avatar, .avatar-img') || targetElement;
+    if (targetAvatar) {
+      if (itemType === 'flower') {
+        targetAvatar.classList.remove('avatar-cheer', 'avatar-shake');
+        void targetAvatar.offsetWidth;
+        targetAvatar.classList.add('avatar-cheer');
+        setTimeout(() => targetAvatar.classList.remove('avatar-cheer'), 750);
+      } else {
+        targetAvatar.classList.remove('avatar-shake', 'avatar-cheer');
+        void targetAvatar.offsetWidth;
+        targetAvatar.classList.add('avatar-shake');
+        setTimeout(() => targetAvatar.classList.remove('avatar-shake'), 500);
+      }
+    }
+  }
+
+  setTimeout(() => splashBox.remove(), 2300);
 }
 
 function renderResults() {
@@ -653,6 +1109,9 @@ function placeBet(symbol) {
 }
 
 function clearRoom(message) {
+  closeItemPicker();
+  const layer = document.getElementById('interaction-layer');
+  if (layer) layer.replaceChildren();
   bowl.reset();
   document.body.classList.remove('in-room');
   room = null;
@@ -752,6 +1211,11 @@ socket.on('room:state', state => {
 socket.on('room:kicked', () => {
   connectionEpoch += 1;
   clearRoom('Bạn đã được đưa ra khỏi bàn chơi.');
+});
+
+socket.on('server_item_thrown', data => {
+  if (!room || (data.roomId && data.roomId !== room.code)) return;
+  animateItemThrown(data);
 });
 
 function adminCommand(event, payload = {}, message) {
@@ -1045,8 +1509,10 @@ async function initialize() {
     config = await res.json();
     symbols = new Map(config.symbols.map(s => [s.id, s]));
     buildBoard();
+    initTetAmbient();
     socket.connect();
   } catch (err) {
+    initTetAmbient();
     notice('Chưa tải được cấu hình phòng.', true);
   } finally {
     loadingConfig = false;
