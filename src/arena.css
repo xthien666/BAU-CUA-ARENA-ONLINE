@@ -2203,6 +2203,652 @@ button.bet-spot:active:not(:disabled) {
   }
 }
 
+/* ===================================================================
+   5. TƯƠNG TÁC NGƯỜI CHƠI (NÉM TRỨNG, CÀ CHUA, TẶNG HOA)
+   =================================================================== */
+
+/* Avatar có thể tương tác */
+.vip-player-row.interactive-player {
+  cursor: pointer;
+  transition: transform 140ms ease, background 140ms ease, border-color 140ms ease;
+  user-select: none;
+}
+
+.vip-player-row.interactive-player:hover {
+  background: rgba(85, 38, 26, 0.7);
+  border-color: #ffd46d;
+  transform: translateX(2px);
+}
+
+.vip-player-row.interactive-player:hover .vip-player-avatar {
+  border-color: #ffe685;
+  box-shadow: 0 0 10px rgba(255, 215, 100, 0.6);
+}
+
+.vip-player-avatar-wrap.interactive-avatar {
+  cursor: pointer;
+}
+
+/* Menu popover chọn vật phẩm ném */
+.item-picker-popover {
+  position: fixed;
+  z-index: 10005;
+  background: linear-gradient(135deg, rgba(28, 12, 9, 0.96) 0%, rgba(14, 5, 4, 0.98) 100%);
+  border: 1.5px solid #d4af37;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9), 0 0 20px rgba(212, 175, 55, 0.35);
+  backdrop-filter: blur(8px);
+  padding: 8px 10px 10px;
+  min-width: 185px;
+  animation: popoverFadeIn 180ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  pointer-events: auto;
+  user-select: none;
+}
+
+@keyframes popoverFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.85) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.item-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+}
+
+.item-picker-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #ffeed5;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.item-picker-title strong {
+  color: #ffdf79;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.item-picker-close {
+  background: transparent;
+  border: none;
+  color: #cbb493;
+  font-size: 16px;
+  line-height: 1;
+  padding: 0 4px;
+  cursor: pointer;
+  transition: color 120ms;
+}
+
+.item-picker-close:hover {
+  color: #ff5555;
+}
+
+.item-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.item-choice-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 4px;
+  background: rgba(45, 18, 12, 0.6);
+  border: 1px solid #7c5324;
+  border-radius: 10px;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 140ms ease, background 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.item-choice-btn:hover {
+  transform: translateY(-2px) scale(1.05);
+}
+
+.item-choice-btn:active {
+  transform: scale(0.95);
+}
+
+.item-choice-btn .item-emoji {
+  font-size: 24px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.5));
+  transition: transform 160ms ease;
+}
+
+.item-choice-btn .item-label {
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #ffebc8;
+  white-space: nowrap;
+}
+
+/* Từng loại item */
+.item-choice-btn[data-item="egg"]:hover {
+  background: rgba(90, 60, 15, 0.7);
+  border-color: #ffd46d;
+  box-shadow: 0 0 12px rgba(255, 212, 109, 0.5);
+}
+.item-choice-btn[data-item="egg"]:hover .item-emoji {
+  animation: eggWobble 0.4s ease infinite alternate;
+}
+
+.item-choice-btn[data-item="tomato"]:hover {
+  background: rgba(90, 20, 15, 0.7);
+  border-color: #ff5e5e;
+  box-shadow: 0 0 12px rgba(255, 94, 94, 0.5);
+}
+.item-choice-btn[data-item="tomato"]:hover .item-emoji {
+  animation: tomatoBounce 0.4s ease infinite alternate;
+}
+
+.item-choice-btn[data-item="flower"]:hover {
+  background: rgba(90, 20, 60, 0.7);
+  border-color: #ff85be;
+  box-shadow: 0 0 12px rgba(255, 133, 190, 0.5);
+}
+.item-choice-btn[data-item="flower"]:hover .item-emoji {
+  animation: flowerBloom 0.4s ease infinite alternate;
+}
+
+@keyframes eggWobble {
+  0% { transform: rotate(-8deg); }
+  100% { transform: rotate(8deg); }
+}
+
+@keyframes tomatoBounce {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.15) rotate(5deg); }
+}
+
+@keyframes flowerBloom {
+  0% { transform: scale(1) rotate(-5deg); }
+  100% { transform: scale(1.18) rotate(5deg); }
+}
+
+/* Lớp vẽ hiệu ứng bay và splash */
+.interaction-layer {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  width: 100dvw;
+  height: 100dvh;
+  pointer-events: none;
+  z-index: 10000;
+  overflow: hidden;
+}
+
+/* Vật phẩm đang bay */
+.thrown-projectile {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  margin-left: -22px;
+  margin-top: -22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.65));
+  will-change: transform, left, top;
+  pointer-events: none;
+}
+
+.thrown-projectile img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Hạt rơi dọc đường bay (trail) */
+.item-trail-particle {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: trailFade 300ms ease-out forwards;
+}
+
+@keyframes trailFade {
+  0% {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.2) translateY(8px);
+  }
+}
+
+/* Hiệu ứng rung / lắc khi Avatar bị trúng đòn */
+.avatar-shake {
+  animation: avatarShakeAnim 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) both !important;
+}
+
+@keyframes avatarShakeAnim {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  15% { transform: translate(-5px, -3px) rotate(-6deg); }
+  30% { transform: translate(4px, 2px) rotate(5deg); }
+  45% { transform: translate(-3px, 1px) rotate(-4deg); }
+  60% { transform: translate(2px, -1px) rotate(3deg); }
+  75% { transform: translate(-1px, 1px) rotate(-1deg); }
+}
+
+/* Hiệu ứng nhảy mừng khi nhận hoa */
+.avatar-cheer {
+  animation: avatarCheerAnim 0.7s cubic-bezier(0.18, 0.89, 0.32, 1.28) both !important;
+}
+
+@keyframes avatarCheerAnim {
+  0%, 100% { transform: scale(1); box-shadow: none; }
+  30% { transform: scale(1.22) translateY(-4px); box-shadow: 0 0 16px rgba(255, 105, 180, 0.8); }
+  60% { transform: scale(1.1) translateY(1px); }
+  80% { transform: scale(1.15) translateY(-2px); }
+}
+
+/* Container chứa vết vỡ / splash trên avatar */
+.impact-splash-box {
+  position: absolute;
+  width: 90px;
+  height: 90px;
+  margin-left: -45px;
+  margin-top: -45px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 10002;
+  animation: splashFadeOut 2.2s ease-in forwards;
+}
+
+@keyframes splashFadeOut {
+  0% { opacity: 1; transform: scale(0.6); }
+  10% { transform: scale(1.12); }
+  18% { transform: scale(1); }
+  75% { opacity: 1; }
+  100% { opacity: 0; transform: scale(1.04) translateY(4px); }
+}
+
+/* 1. Trứng vỡ */
+.egg-splash-content {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.egg-splat-yolk {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 36px;
+  height: 36px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle at 35% 35%, #fff275 0%, #ffb703 60%, #fb8500 100%);
+  border-radius: 46% 54% 50% 50% / 55% 45% 55% 45%;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.8);
+  animation: yolkJiggle 0.6s ease;
+}
+
+.egg-splat-white {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 68px;
+  height: 68px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 0.92) 0%, rgba(245, 245, 220, 0.75) 70%, rgba(255, 255, 255, 0) 100%);
+  border-radius: 40% 60% 55% 45% / 50% 40% 60% 50%;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4));
+}
+
+.egg-drip {
+  position: absolute;
+  background: #ffb703;
+  width: 6px;
+  border-radius: 3px;
+  transform-origin: top center;
+  animation: eggDripAnim 1.6s ease-out forwards;
+}
+
+@keyframes eggDripAnim {
+  0% { height: 0; opacity: 1; }
+  100% { height: 28px; opacity: 0.9; }
+}
+
+@keyframes yolkJiggle {
+  0% { transform: translate(-50%, -50%) scale(0.3); }
+  50% { transform: translate(-50%, -50%) scale(1.2); }
+  100% { transform: translate(-50%, -50%) scale(1); }
+}
+
+/* Mảnh vỏ trứng văng */
+.shell-fragment {
+  position: absolute;
+  background: #fbf5e6;
+  border: 1px solid #d8caa8;
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+  animation: shellFly 0.5s ease-out forwards;
+}
+
+@keyframes shellFly {
+  0% { opacity: 1; transform: translate(0, 0) scale(1) rotate(0deg); }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0.4) rotate(var(--rot)); }
+}
+
+/* 2. Cà chua vỡ */
+.tomato-splash-content {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.tomato-sauce-main {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 58px;
+  height: 58px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle at 35% 35%, #ff3b30 0%, #d90429 55%, #7a0000 100%);
+  border-radius: 52% 48% 65% 35% / 45% 55% 45% 55%;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6), inset 0 2px 6px rgba(255, 120, 120, 0.7);
+  animation: tomatoSplosh 0.5s ease;
+}
+
+@keyframes tomatoSplosh {
+  0% { transform: translate(-50%, -50%) scale(0.2); }
+  60% { transform: translate(-50%, -50%) scale(1.25); }
+  100% { transform: translate(-50%, -50%) scale(1); }
+}
+
+.tomato-sauce-drop {
+  position: absolute;
+  border-radius: 50%;
+  background: #d90429;
+  animation: tomatoDropScatter 0.5s ease-out forwards;
+}
+
+@keyframes tomatoDropScatter {
+  0% { opacity: 1; transform: translate(0, 0) scale(1); }
+  100% { opacity: 0.85; transform: translate(var(--dx), var(--dy)) scale(var(--sc)); }
+}
+
+.tomato-drip {
+  position: absolute;
+  background: #ba181b;
+  width: 5px;
+  border-radius: 3px;
+  animation: tomatoDripAnim 1.6s ease-out forwards;
+}
+
+@keyframes tomatoDripAnim {
+  0% { height: 0; opacity: 1; }
+  100% { height: 26px; opacity: 0.9; }
+}
+
+/* 3. Tặng hoa hồng */
+.flower-splash-content {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flower-bouquet-center {
+  font-size: 38px;
+  line-height: 1;
+  filter: drop-shadow(0 4px 14px rgba(255, 60, 130, 0.7));
+  animation: flowerPop 0.6s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+}
+
+@keyframes flowerPop {
+  0% { transform: scale(0) rotate(-20deg); }
+  60% { transform: scale(1.3) rotate(8deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+.flower-petal {
+  position: absolute;
+  font-size: 16px;
+  animation: petalBurst 1.8s ease-out forwards;
+}
+
+@keyframes petalBurst {
+  0% { opacity: 1; transform: translate(0, 0) scale(0.5) rotate(0deg); }
+  50% { opacity: 0.9; transform: translate(var(--dx), var(--dy)) scale(1.1) rotate(var(--rot)); }
+  100% { opacity: 0; transform: translate(calc(var(--dx) * 1.3), calc(var(--dy) + 30px)) scale(0.8) rotate(calc(var(--rot) * 2)); }
+}
+
+.flower-heart {
+  position: absolute;
+  font-size: 18px;
+  animation: heartFloat 2s ease-out forwards;
+}
+
+@keyframes heartFloat {
+  0% { opacity: 0; transform: translate(0, 0) scale(0.3); }
+  20% { opacity: 1; transform: translate(var(--dx), -15px) scale(1.2); }
+  100% { opacity: 0; transform: translate(calc(var(--dx) * 1.5), -70px) scale(0.8); }
+}
+
+/* ===================================================================
+   6. HIỆU ỨNG HÌNH NỀN ĐỘNG TẾT (HOA ĐÀO/MAI, PHÁO HOA, ĐÈN LỒNG)
+   =================================================================== */
+
+.tet-ambient-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 12;
+  pointer-events: none !important;
+  overflow: hidden;
+}
+
+.tet-ambient-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none !important;
+  display: block;
+}
+
+/* ĐÈN LỒNG TẾT ĐUNG ĐƯA CUNG ĐÌNH */
+.tet-lantern-wrap {
+  position: absolute;
+  top: -4px;
+  width: clamp(34px, 4.2cqw, 52px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none !important;
+  transform-origin: top center;
+  z-index: 14;
+}
+
+.tet-lantern-wrap.lantern-left {
+  left: clamp(16%, 18cqw, 21%);
+  animation: lanternSwayLeft 4.6s cubic-bezier(0.445, 0.05, 0.55, 0.95) infinite alternate;
+}
+
+.tet-lantern-wrap.lantern-right {
+  right: clamp(16%, 18cqw, 21%);
+  animation: lanternSwayRight 4.9s cubic-bezier(0.445, 0.05, 0.55, 0.95) infinite alternate;
+}
+
+@keyframes lanternSwayLeft {
+  0% { transform: rotate(-5.5deg); }
+  50% { transform: rotate(1deg); }
+  100% { transform: rotate(5.5deg); }
+}
+
+@keyframes lanternSwayRight {
+  0% { transform: rotate(5deg); }
+  50% { transform: rotate(-1.5deg); }
+  100% { transform: rotate(-5deg); }
+}
+
+/* Dây treo đèn lồng */
+.lantern-string {
+  width: 1.5px;
+  height: clamp(12px, 2.5cqh, 22px);
+  background: linear-gradient(180deg, #d4af37, #991b1b);
+}
+
+/* Khung đèn lồng */
+.tet-lantern {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.65));
+}
+
+/* Nắp trên và nắp dưới vàng kim */
+.lantern-cap {
+  width: 60%;
+  height: clamp(4px, 0.8cqh, 6px);
+  background: linear-gradient(90deg, #b8860b 0%, #ffd700 50%, #996515 100%);
+  border: 0.5px solid #ffe57f;
+  border-radius: 3px;
+  z-index: 2;
+}
+
+.lantern-cap.top {
+  border-bottom: none;
+  border-radius: 4px 4px 1px 1px;
+}
+
+.lantern-cap.bottom {
+  border-top: none;
+  border-radius: 1px 1px 4px 4px;
+}
+
+/* Thân đèn lồng hình oval gấm đỏ */
+.lantern-body {
+  position: relative;
+  width: clamp(32px, 3.8cqw, 48px);
+  height: clamp(38px, 4.8cqh, 56px);
+  background: radial-gradient(ellipse at 50% 45%, #ff2a2a 0%, #d90429 55%, #7a0000 100%);
+  border-radius: 45% / 50%;
+  border: 1px solid #ffd700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 0 12px rgba(255, 230, 100, 0.5), 0 0 20px rgba(230, 30, 30, 0.45);
+  animation: lanternGlowPulse 3.5s ease-in-out infinite alternate;
+  overflow: hidden;
+}
+
+@keyframes lanternGlowPulse {
+  0% {
+    box-shadow: inset 0 0 10px rgba(255, 220, 80, 0.4), 0 0 15px rgba(255, 40, 40, 0.35);
+  }
+  100% {
+    box-shadow: inset 0 0 18px rgba(255, 240, 140, 0.7), 0 0 28px rgba(255, 60, 60, 0.65);
+  }
+}
+
+/* Các nan dọc của đèn lồng */
+.lantern-ribs {
+  position: absolute;
+  inset: 0;
+  border-radius: 45% / 50%;
+  border-left: 1px solid rgba(255, 215, 0, 0.45);
+  border-right: 1px solid rgba(255, 215, 0, 0.45);
+  pointer-events: none;
+}
+
+.lantern-ribs::before {
+  content: '';
+  position: absolute;
+  inset: 0 24%;
+  border-radius: 45% / 50%;
+  border-left: 1px solid rgba(255, 215, 0, 0.35);
+  border-right: 1px solid rgba(255, 215, 0, 0.35);
+}
+
+/* Ánh sáng ấm bên trong */
+.lantern-glow {
+  position: absolute;
+  width: 60%;
+  height: 60%;
+  background: radial-gradient(circle, rgba(255, 245, 170, 0.6) 0%, rgba(255, 100, 0, 0) 70%);
+  border-radius: 50%;
+}
+
+/* Chữ thư pháp may mắn (PHÚC / LỘC) */
+.lantern-char {
+  position: relative;
+  z-index: 3;
+  font-family: 'Cinzel', 'Be Vietnam Pro', serif;
+  font-size: clamp(8px, 1.1cqw, 12px);
+  font-weight: 900;
+  color: #fff2a8;
+  text-shadow: 0 0 5px rgba(255, 215, 0, 0.8), 0 1px 2px rgba(0, 0, 0, 0.8);
+  letter-spacing: 0.5px;
+}
+
+/* Tua rua đèn lồng */
+.lantern-tassel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform-origin: top center;
+  animation: tasselSway 4.8s cubic-bezier(0.445, 0.05, 0.55, 0.95) infinite alternate;
+}
+
+@keyframes tasselSway {
+  0% { transform: rotate(7deg); }
+  100% { transform: rotate(-7deg); }
+}
+
+.tassel-knot {
+  width: clamp(5px, 0.7cqw, 8px);
+  height: clamp(5px, 0.7cqw, 8px);
+  background: #ffd700;
+  border-radius: 50%;
+  border: 0.5px solid #fff;
+  margin-top: -1px;
+}
+
+.tassel-threads {
+  width: clamp(3px, 0.4cqw, 5px);
+  height: clamp(14px, 2.2cqh, 26px);
+  background: linear-gradient(180deg, #d90429 0%, #ff4d6d 60%, #ffd700 100%);
+  border-radius: 0 0 2px 2px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+}
+
+/* Tắt hoạt họa khi người dùng bật reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .tet-lantern-wrap,
+  .lantern-tassel,
+  .lantern-body {
+    animation: none !important;
+  }
+}
+
 /* Dynamic visibility must win over component display declarations above. */
 [hidden] {
   display: none !important;

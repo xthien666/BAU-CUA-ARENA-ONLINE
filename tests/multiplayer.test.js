@@ -209,3 +209,48 @@ test('20 sockets auto-settle without host actions; host commands and kick are wi
   await kicked;
   assert.equal((await command(guests[0], 'room:sync')).error.code, 'NOT_IN_ROOM');
 });
+
+test('players can throw interactive items (egg, tomato, flower) to each other in the same room', async t => {
+  const { connect } = await setup(t, { autoStart: false });
+  const host = await connect();
+  const guest = await connect();
+
+  const created = await success(host, 'room:create', { name: 'Người Ném' });
+  const joined = await success(guest, 'room:join', { name: 'Người Nhận', code: created.state.code });
+
+  const guestReceivedPromise = new Promise(resolve => {
+    guest.once('server_item_thrown', data => resolve(data));
+  });
+  const hostReceivedPromise = new Promise(resolve => {
+    host.once('server_item_thrown', data => resolve(data));
+  });
+
+  const throwPayload = {
+    fromId: created.session.playerId,
+    toId: joined.session.playerId,
+    itemType: 'tomato',
+    startPos: { x: 100, y: 200 },
+    endPos: { x: 300, y: 400 },
+    roomId: created.state.code,
+  };
+
+  const ack = await new Promise(resolve => {
+    host.emit('client_throw_item', throwPayload, reply => resolve(reply));
+  });
+
+  assert.equal(ack.ok, true);
+
+  const [guestEvent, hostEvent] = await Promise.all([guestReceivedPromise, hostReceivedPromise]);
+  assert.equal(guestEvent.itemType, 'tomato');
+  assert.equal(guestEvent.fromId, created.session.playerId);
+  assert.equal(guestEvent.toId, joined.session.playerId);
+  assert.equal(guestEvent.startPos.x, 100);
+  assert.equal(guestEvent.startPos.y, 200);
+  assert.equal(guestEvent.endPos.x, 300);
+  assert.equal(guestEvent.endPos.y, 400);
+  assert.equal(guestEvent.roomId, created.state.code);
+
+  assert.equal(hostEvent.itemType, 'tomato');
+  assert.equal(hostEvent.fromId, created.session.playerId);
+});
+

@@ -41,6 +41,43 @@
   <div class="arcade-viewport">
     <div class="arcade-stage" id="arcade-stage">
 
+      <!-- LỚP KHÔNG KHÍ TẾT ĐỘNG: HOA RƠI, PHÁO HOA BẦU TRỜI & ĐÈN LỒNG ĐUNG ĐƯA -->
+      <div id="tet-ambient-layer" class="tet-ambient-layer" aria-hidden="true">
+        <canvas id="tet-ambient-canvas" class="tet-ambient-canvas"></canvas>
+        <div class="tet-lantern-wrap lantern-left">
+          <div class="lantern-string"></div>
+          <div class="tet-lantern">
+            <div class="lantern-cap top"></div>
+            <div class="lantern-body">
+              <div class="lantern-glow"></div>
+              <span class="lantern-char">PHÚC</span>
+              <div class="lantern-ribs"></div>
+            </div>
+            <div class="lantern-cap bottom"></div>
+            <div class="lantern-tassel">
+              <div class="tassel-knot"></div>
+              <div class="tassel-threads"></div>
+            </div>
+          </div>
+        </div>
+        <div class="tet-lantern-wrap lantern-right">
+          <div class="lantern-string"></div>
+          <div class="tet-lantern">
+            <div class="lantern-cap top"></div>
+            <div class="lantern-body">
+              <div class="lantern-glow"></div>
+              <span class="lantern-char">LỘC</span>
+              <div class="lantern-ribs"></div>
+            </div>
+            <div class="lantern-cap bottom"></div>
+            <div class="lantern-tassel">
+              <div class="tassel-knot"></div>
+              <div class="tassel-threads"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- GIAO DIỆN SẢNH (LOBBY) TRƯỚC KHI VÀO PHÒNG -->
       <section id="home" class="lobby-overlay" aria-labelledby="lobby-heading">
         <div class="lobby-box">
