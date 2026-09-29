@@ -1775,12 +1775,15 @@ button.bet-spot:active:not(:disabled) {
 
 /* Nút Chat bên trái */
 .chat-btn {
+  position: relative;
   width: 46px;
   height: 46px;
   border-radius: var(--radius-circle);
   background: transparent;
   border: 0;
   cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
   display: grid;
   place-items: center;
   padding: 0;
@@ -1791,6 +1794,15 @@ button.bet-spot:active:not(:disabled) {
 .chat-btn:hover {
   transform: scale(1.08);
   filter: drop-shadow(0 4px 9px rgba(0, 0, 0, 0.72)) drop-shadow(0 0 8px rgba(255, 214, 103, 0.5));
+}
+
+.chat-btn:active {
+  transform: scale(0.95);
+}
+
+.chat-btn:focus-visible {
+  outline: 2px solid var(--hub-focus, #fff3a0);
+  outline-offset: 2px;
 }
 
 .chat-btn img {

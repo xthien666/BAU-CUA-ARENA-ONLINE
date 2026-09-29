@@ -471,6 +471,7 @@
 }
 
 /* Lions card */
+.hub-layer--lion-img { align-items: center; padding: 0; }
 .hub-lion-poster,
 .hub-lion-video {
   position: absolute;
@@ -483,6 +484,7 @@
   pointer-events: none;
 }
 
+.hub-lion-video { z-index: 1; }
 .hub-lion-video[hidden] { display: none; }
 
 .hub-lions-img {

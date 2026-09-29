@@ -153,13 +153,16 @@
             <div class="hub-card-inner">
               <div class="hub-card-frame" aria-hidden="true"></div>
               <div class="hub-card-art" aria-hidden="true">
-                <img src="/assets/hub/friends-lion-poster.webp" alt="" class="hub-lion-poster" draggable="false" />
-                <video id="hub-lion-video" class="hub-lion-video"
-                  poster="/assets/hub/friends-lion-poster.webp"
-                  data-webm="/assets/hub/friends-lion-loop.webm"
-                  data-src="/assets/hub/friends-lion-loop.mp4"
-                  data-force-motion="true" data-playback-rate="1"
-                  muted loop playsinline preload="none" tabindex="-1" disablepictureinpicture></video>
+                <div class="hub-card-glow hub-card-glow--lion"></div>
+                <div class="hub-layer hub-layer--lion-img">
+                  <img src="/assets/hub/friends-lion-poster.webp" alt="" class="hub-lion-poster" draggable="false" />
+                  <video id="hub-lion-video" class="hub-lion-video"
+                    data-src="/assets/hub/friends-lion-loop.mp4"
+                    data-force-motion="true"
+                    poster="/assets/hub/friends-lion-poster.webp"
+                    muted loop playsinline preload="none" tabindex="-1"
+                    disablepictureinpicture disableremoteplayback aria-hidden="true"></video>
+                </div>
               </div>
               <div class="hub-card-label">
                 <span class="hub-card-title">Chơi với bạn</span>
