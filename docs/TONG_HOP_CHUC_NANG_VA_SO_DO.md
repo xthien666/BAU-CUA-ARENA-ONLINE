@@ -4,7 +4,7 @@
 
 ## 1. Tổng quan dự án
 
-Bầu Cua Victory là trò chơi Bầu Cua nhiều người chơi theo phòng, sử dụng xu ảo. Giao diện chạy trên trình duyệt máy tính và điện thoại; máy chủ Node.js giữ quyền quyết định đối với phòng, cược, xúc xắc, kết quả và số dư.
+Bầu Cua Arena là trò chơi Bầu Cua nhiều người chơi theo phòng, sử dụng xu ảo. Giao diện chạy trên trình duyệt máy tính và điện thoại; máy chủ Node.js giữ quyền quyết định đối với phòng, cược, xúc xắc, kết quả và số dư.
 
 - Frontend: HTML, CSS, JavaScript ES modules và Vite.
 - Realtime: Socket.IO client/server.

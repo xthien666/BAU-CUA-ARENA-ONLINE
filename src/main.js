@@ -49,7 +49,7 @@ let sessionReplaced = false;
 let connectionEpoch = 0;
 const symbolViews = new Map();
 const chipButtons = [];
-let audioEnabled = true;
+let audioEnabled = localStorage.getItem('bau-cua-muted') !== 'true';
 let audioCtx = null;
 const backgroundMusic = ui['background-music'];
 
@@ -59,7 +59,8 @@ if (backgroundMusic) {
 }
 
 function startBackgroundMusic() {
-  if (!audioEnabled || !backgroundMusic || !backgroundMusic.paused) return;
+  if (!audioEnabled || !backgroundMusic || !backgroundMusic.paused ||
+      (ui['auth-screen'] && !ui['auth-screen'].hidden)) return;
   const playback = backgroundMusic.play();
   if (playback?.catch) playback.catch(() => { });
 }
@@ -158,7 +159,9 @@ function readSession() {
 
 function rememberSession(session) {
   if (!session?.token) return;
-  savedSession = { token: session.token, roomCode: session.roomCode, name: ui['player-name'].value.trim() };
+  const storedUser = JSON.parse(localStorage.getItem('baucua_user') || 'null');
+  const name = ui['player-name']?.value.trim() || storedUser?.username || '';
+  savedSession = { token: session.token, roomCode: session.roomCode, name };
   try { sessionStorage.setItem(sessionKey, JSON.stringify(savedSession)); } catch { }
 }
 
@@ -217,10 +220,10 @@ function availableBalance() {
 
 function renderControls() {
   const ready = Boolean(config && socket.connected && !busy && !acceptingMembership && !sessionReplaced);
-  ui['create-room'].disabled = !ready;
-  ui['join-room'].disabled = !ready;
-  ui['player-name'].disabled = busy || acceptingMembership;
-  ui['room-code-input'].disabled = busy || acceptingMembership;
+  if (ui['create-room']) ui['create-room'].disabled = !ready;
+  if (ui['join-room']) ui['join-room'].disabled = !ready;
+  if (ui['player-name']) ui['player-name'].disabled = busy || acceptingMembership;
+  if (ui['room-code-input']) ui['room-code-input'].disabled = busy || acceptingMembership;
   ui['symbol-controls'].disabled = !canBet();
   ui['reset-bet'].disabled = !canBet() || totalBet() === 0;
   for (const button of chipButtons) button.disabled = !canBet();
@@ -396,12 +399,16 @@ function applyState(next) {
   const previous = room;
   room = next;
   document.body.classList.add('in-room');
+  document.body.classList.remove('scroll-mode'); // Tắt cuộn khi vào game
   bowl.update(next);
   const covered = bowl.covered();
   serverOffset = next.serverNow - Date.now();
 
-  ui.home.hidden = true;
+  // Ẩn UI Auth & Sảnh
+  if (ui['auth-screen']) ui['auth-screen'].hidden = true;
+  if (ui['main-lobby-screen']) ui['main-lobby-screen'].hidden = true;
   ui.game.hidden = false;
+
   ui['room-code'].textContent = room.code;
 
   const you = room.players.find(player => player.id === room.you.id);
@@ -420,6 +427,15 @@ function applyState(next) {
   ui['balance'].textContent = covered ? '•••' : number(spendableBalance);
   if (ui['available-balance']) ui['available-balance'].textContent = number(spendableBalance);
   ui['total-bet'].textContent = number(totalBet());
+  // [CHÈN THÊM] Đồng bộ ví từ server về LocalStorage để Sảnh chờ không hiển thị sai
+  const userStr = localStorage.getItem('baucua_user');
+  if (userStr) {
+    try {
+      const userObj = JSON.parse(userStr);
+      userObj.balance = room.you.balance;
+      localStorage.setItem('baucua_user', JSON.stringify(userObj));
+    } catch(e){}
+  }
 
   // Cập nhật trạng thái từng ô cược
   for (const [id, view] of symbolViews) {
@@ -660,41 +676,59 @@ function clearRoom(message) {
   busy = false;
   acceptingMembership = false;
   forgetSession();
+  
   ui.game.hidden = true;
-  ui.home.hidden = false;
+  if (window.checkAuthAndLoadLobby) window.checkAuthAndLoadLobby(); // Quay lại Sảnh
+  
   renderControls();
-  notice(message);
+  if(message) alert(message); // Đổi thành alert vì UI cũ đã xóa
 }
 
-async function enterRoom(event) {
+async function enterRoom(event, forceCode = null) {
   if (!config || busy || acceptingMembership || !socket.connected || sessionReplaced) return;
-  const name = ui['player-name'].value.trim();
-  ui['player-name'].value = name;
-  if (!ui['player-name'].reportValidity()) return;
-  const code = ui['room-code-input'].value.trim().toUpperCase();
+  
+  const token = localStorage.getItem('baucua_token');
+  const userStr = localStorage.getItem('baucua_user');
+  if (!token || !userStr) return alert("Bạn cần đăng nhập để chơi!");
+  const name = JSON.parse(userStr).username;
+  
+  const code = forceCode || ui['join-room-code']?.value.trim().toUpperCase() || '';
   if (event === 'room:join' && !/^[A-Z0-9]{6}$/.test(code)) {
-    notice('Nhập mã phòng 6 ký tự.', true);
-    ui['room-code-input'].focus();
-    return;
+    return alert('Nhập mã phòng 6 ký tự hợp lệ.');
   }
+  
   busy = true;
   acceptingMembership = true;
   renderControls();
-  notice(event === 'room:create' ? 'Đang tạo phòng mới…' : 'Đang vào phòng…');
+  
   const epoch = connectionEpoch;
   try {
-    const reply = await send(event, event === 'room:create' ? { name } : { name, code });
+    // Gửi kèm token định danh lên máy chủ
+    const minimumBalance = Number(ui['room-minimum-balance']?.value || 0);
+    const reply = await send(event, event === 'room:create' ? { name, token, minimumBalance } : { name, code, token });
     if (epoch !== connectionEpoch) return;
     rememberSession(reply.session);
     synced = true;
     applyState(reply.state);
   } catch (error) {
     if (epoch !== connectionEpoch) return;
-    notice(error.message, true);
+    alert(error.message);
+    // [CHÈN THÊM] Tự động văng ra form Login nếu phiên làm việc không hợp lệ
+    if (error.message.includes('đăng nhập') || error.message.includes('hết hạn')) {
+        localStorage.removeItem('baucua_token');
+        localStorage.removeItem('baucua_user');
+        location.reload();
+    }
   } finally {
     if (epoch === connectionEpoch) { busy = false; acceptingMembership = false; renderControls(); }
   }
 }
+
+// Mở khóa để file auth_scr.js có thể gọi hàm chạy Game
+window.triggerGameAction = function(action, code) {
+  if (action === 'create') enterRoom('room:create');
+  else if (action === 'join') enterRoom('room:join', code);
+};
 
 async function resumeRoom(epoch) {
   acceptingMembership = true;
@@ -760,10 +794,10 @@ function adminCommand(event, payload = {}, message) {
 }
 
 // Gán các sự kiện tương tác giao diện
-ui['lobby-form'].addEventListener('submit', event => { event.preventDefault(); enterRoom('room:create'); });
-ui['join-room'].addEventListener('click', () => enterRoom('room:join'));
-ui['room-code-input'].addEventListener('input', () => { ui['room-code-input'].value = ui['room-code-input'].value.toUpperCase().replace(/[^A-Z0-9]/g, ''); });
-ui['room-code-input'].addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); enterRoom('room:join'); } });
+if (ui['lobby-form']) ui['lobby-form'].addEventListener('submit', event => { event.preventDefault(); enterRoom('room:create'); });
+if (ui['join-room']) ui['join-room'].addEventListener('click', () => enterRoom('room:join'));
+if (ui['room-code-input']) ui['room-code-input'].addEventListener('input', () => { ui['room-code-input'].value = ui['room-code-input'].value.toUpperCase().replace(/[^A-Z0-9]/g, ''); });
+if (ui['room-code-input']) ui['room-code-input'].addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); enterRoom('room:join'); } });
 
 // Xóa cược & Đặt cược
 ui['reset-bet'].addEventListener('click', () => {
@@ -930,17 +964,28 @@ window.visualViewport?.addEventListener('resize', handleViewportOrientationChang
 syncAppViewport();
 syncFullscreenControls();
 
-// Quản lý Âm thanh
-if (ui['sound-toggle']) {
-  ui['sound-toggle'].addEventListener('click', () => {
+// Quản lý Âm thanh dùng chung cho auth, lobby và bàn game.
+const soundButtons = [...document.querySelectorAll('[data-sound-toggle]')];
+function updateSoundButtons() {
+  for (const button of soundButtons) {
+    const icon = button.querySelector('img');
+    if (icon) icon.src = audioEnabled ? '/assets/arena/icon-sound.png' : '/assets/arena/icon-mute.png';
+    button.setAttribute('aria-pressed', String(audioEnabled));
+    button.setAttribute('aria-label', audioEnabled ? 'Tắt âm thanh' : 'Bật âm thanh');
+  }
+}
+
+for (const button of soundButtons) {
+  button.addEventListener('click', () => {
     audioEnabled = !audioEnabled;
+    localStorage.setItem('bau-cua-muted', String(!audioEnabled));
     if (audioEnabled) getAudioContext();
     syncBackgroundMusic();
-    ui['sound-icon'].src = audioEnabled ? '/assets/arena/icon-sound.png' : '/assets/arena/icon-mute.png';
-    ui['sound-toggle'].setAttribute('aria-pressed', String(audioEnabled));
+    updateSoundButtons();
     notice(audioEnabled ? 'Đã bật âm thanh' : 'Đã tắt âm thanh');
   });
 }
+updateSoundButtons();
 
 // Quản lý Modal
 if (ui['rules-toggle'] && ui['rules-dialog']) {
@@ -1054,6 +1099,6 @@ async function initialize() {
 }
 
 const invitation = new URLSearchParams(location.search).get('room')?.toUpperCase();
-if (invitation && /^[A-Z0-9]{6}$/.test(invitation)) ui['room-code-input'].value = invitation;
-if (savedSession?.name) ui['player-name'].value = savedSession.name;
+if (invitation && /^[A-Z0-9]{6}$/.test(invitation) && ui['room-code-input']) ui['room-code-input'].value = invitation;
+if (savedSession?.name && ui['player-name']) ui['player-name'].value = savedSession.name;
 initialize();

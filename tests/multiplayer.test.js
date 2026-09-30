@@ -9,7 +9,7 @@ import { createGameServer } from '../server.js';
 const config = JSON.parse(await readFile(new URL('../game-config.json', import.meta.url), 'utf8'));
 
 async function setup(t, options = {}) {
-  const app = await createGameServer({ autoStart: false, revealMs: 35, hostGraceMs: 60, ...options });
+  const app = await createGameServer({ requireAuth: false, autoStart: false, revealMs: 35, hostGraceMs: 60, ...options });
   const address = await app.listen(0, '127.0.0.1');
   const url = `http://127.0.0.1:${address.port}`;
   const clients = [];

@@ -4,6 +4,7 @@ import { dirname, extname, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Server } from 'socket.io';
 import { GameService } from './game.js';
+import { handleRegister, handleLogin, verifyAccessToken } from './auth_server.js';
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const events = ['room:create', 'room:join', 'room:resume', 'room:sync', 'room:leave',
@@ -70,6 +71,38 @@ export async function createGameServer(options = {}) {
       if (req.method === 'GET' && url.pathname === '/api/health') {
         return sendJson(res, 200, { ok: true, rooms: game.rooms.size, players: game.sessions.size });
       }
+      // [CHÈN THÊM] BỘ 3 API MỚI CHO HỆ THỐNG TÀI KHOẢN VÀ SẢNH CHỜ
+      if (req.method === 'POST' && url.pathname === '/api/auth/register') {
+        return await handleRegister(req, res, sendJson);
+      }
+      
+      if (req.method === 'POST' && url.pathname === '/api/auth/login') {
+        return await handleLogin(req, res, sendJson);
+      }
+      
+      if (req.method === 'GET' && url.pathname === '/api/rooms') {
+        const authorization = req.headers.authorization || '';
+        const accessToken = authorization.startsWith('Bearer ') ? authorization.slice(7) : '';
+        const user = await verifyAccessToken(accessToken);
+        if (!user) return sendJson(res, 401, { error: 'Phiên đăng nhập không hợp lệ.' });
+        // Lấy danh sách các phòng game đang hoạt động cho Sảnh chọn bàn
+        const activeRooms = [];
+        for (const [code, roomData] of game.rooms.entries()) {
+          // Chỉ lấy phòng chưa khóa và chưa đầy (dưới 20 người)
+          if (!roomData.locked && roomData.players.size < 20 && ['waiting', 'betting'].includes(roomData.phase) &&
+              Number(user.balance) >= (roomData.minimumBalance ?? 0)) {
+            activeRooms.push({
+              code,
+              playersCount: roomData.players.size,
+              phase: roomData.phase,
+              hostId: roomData.hostId,
+              minimumBalance: roomData.minimumBalance ?? 0
+            });
+          }
+        }
+        return sendJson(res, 200, { rooms: activeRooms });
+      }
+      // [KẾT THÚC CHÈN THÊM]
       if (url.pathname === '/api' || url.pathname.startsWith('/api/')) return sendJson(res, 404, { error: 'Not found' });
       if (!['GET', 'HEAD'].includes(req.method)) return sendJson(res, 404, { error: 'Not found' });
 
@@ -111,6 +144,7 @@ export async function createGameServer(options = {}) {
 
   game = new GameService(config, {
     ...options,
+    requireAuth: options.requireAuth ?? true,
     onState: (socketId, state) => io.to(socketId).emit('room:state', state),
     onKick: socketId => io.to(socketId).emit('room:kicked'),
     onReplace: socketId => {
@@ -124,7 +158,7 @@ export async function createGameServer(options = {}) {
     let windowStart = Date.now();
     let eventCount = 0;
     for (const event of events) {
-      socket.on(event, (payload, acknowledge) => {
+      socket.on(event, async (payload, acknowledge) => { // Thêm async ở đây
         if (typeof acknowledge !== 'function') return;
         if (Date.now() - windowStart >= 10_000) {
           windowStart = Date.now();
@@ -135,7 +169,7 @@ export async function createGameServer(options = {}) {
           acknowledge({ ok: false, error: { code: 'RATE_LIMIT', message: 'Bạn thao tác quá nhanh. Vui lòng chờ một chút.' } });
           return;
         }
-        acknowledge(game.handle(socket.id, event, payload));
+        acknowledge(await game.handle(socket.id, event, payload)); // Thêm await ở đây
       });
     }
     socket.on('disconnect', () => game.disconnect(socket.id));

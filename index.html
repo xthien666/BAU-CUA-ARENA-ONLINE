@@ -18,8 +18,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
-    href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500&family=Cinzel:wght@600;700;800;900&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Cinzel:wght@600;700;800;900&family=Nunito:wght@400;500;600;700;800;900&display=swap"
     rel="stylesheet">
+  <link rel="stylesheet" href="arena.css" />
+  <link rel="stylesheet" href="style.css" />
 </head>
 
 <body>
@@ -37,42 +39,199 @@
     </div>
   </aside>
 
+  <!-- 1. GIAO DIỆN XÁC THỰC (LOGIN & REGISTER) -->
+  <section id="auth-screen" class="fullpage-scroll-overlay">
+    <!-- Form Đăng Nhập -->
+    <div id="login-box" class="lobby-box auth-box">
+      <div class="lobby-brand">
+        <img src="/assets/arena/logo1.png" alt="Bầu Cua" class="lobby-logo" />
+        <p class="lobby-tagline">VUI LÀ CHÍNH · TIỀN LÀ ẢO</p>
+      </div>
+      <form id="login-form" class="lobby-form">
+        <h2 class="gold-title" style="font-size: 36px; margin-bottom: 10px;">ĐĂNG NHẬP</h2>
+        <div class="input-group">
+          <label for="login-email">EMAIL CỦA BẠN</label>
+          <input id="login-email" type="email" placeholder="Ví dụ: baucua@gmail.com" required />
+        </div>
+        <div class="input-group">
+          <label for="login-password">MẬT KHẨU</label>
+          <input id="login-password" type="password" placeholder="Nhập mật khẩu" required />
+        </div>
+        <button id="btn-forgot-password" class="auth-text-button" type="button">Quên mật khẩu?</button>
+        <p id="login-error" class="error-text" hidden></p>
+        <div class="lobby-actions">
+          <button id="btn-login" class="btn-gold-primary" type="submit">Đăng Nhập</button>
+        </div>
+        <div class="social-login-divider"><span>Hoặc đăng nhập bằng</span></div>
+        <div class="social-login-buttons" aria-label="Đăng nhập bằng mạng xã hội">
+          <button id="btn-google-login" class="social-login-button google-social" type="button"
+            aria-label="Đăng nhập bằng Google">G</button>
+          <button id="btn-facebook-login" class="social-login-button facebook-social" type="button"
+            aria-label="Đăng nhập bằng Facebook">f</button>
+          <button id="btn-apple-login" class="social-login-button apple-social ios-only" type="button"
+            aria-label="Đăng nhập bằng Apple"></button>
+        </div>
+        <div class="lobby-or"><span>CHƯA CÓ TÀI KHOẢN?</span></div>
+        <button id="btn-show-register" class="btn-gold-secondary" type="button">Tạo tài khoản mới</button>
+      </form>
+    </div>
+
+    <!-- Form Đăng Ký (Ẩn mặc định) -->
+    <div id="register-box" class="lobby-box auth-box" hidden>
+      <div class="lobby-brand">
+        <div class="brand-group">
+          <img src="/assets/arena/logo1.png" alt="Bầu Cua" class="lobby-logo" />
+          <p class="lobby-tagline">VUI LÀ CHÍNH · TIỀN LÀ ẢO</p>
+        </div>
+      </div>
+      <form id="register-form" class="lobby-form">
+        <h2 class="gold-title" style="font-size: 24px; margin-bottom: 10px;">TẠO TÀI KHOẢN</h2>
+        <div class="input-group">
+          <label for="reg-username">TÊN ĐĂNG NHẬP (Viết liền, không dấu)</label>
+          <input id="reg-username" type="text" placeholder="Ví dụ: ThinhTu99" pattern="^[a-zA-Z0-9_]+$" required />
+        </div>
+        <div class="input-group">
+          <label for="reg-email">EMAIL TRUY CẬP</label>
+          <input id="reg-email" type="email" placeholder="Sử dụng email thật để xác thực" required />
+        </div>
+        <div class="input-group">
+          <label for="reg-password">MẬT KHẨU (8-16 ký tự, gồm chữ, số, ký tự đặc biệt)</label>
+          <input id="reg-password" type="password" minlength="8" maxlength="16" required />
+        </div>
+        <div class="input-group">
+          <label for="reg-confirm">XÁC NHẬN MẬT KHẨU</label>
+          <input id="reg-confirm" type="password" required />
+        </div>
+        <div class="input-group">
+          <label for="reg-referral">MÃ GIỚI THIỆU (Không bắt buộc)</label>
+          <input id="reg-referral" type="text" placeholder="Nhập mã nếu có" />
+        </div>
+        <div class="checkbox-group">
+          <input type="checkbox" id="reg-terms" required />
+          <label for="reg-terms">Tôi đồng ý với các Điều khoản sử dụng</label>
+        </div>
+        <p id="reg-error" class="error-text" hidden></p>
+        <div id="reg-success-wrap" hidden>
+          <p class="success-text">Tạo tài khoản thành công!</p>
+          <button id="btn-back-to-login-success" class="btn-gold-primary" type="button" style="margin-bottom: 15px;">Bắt
+            đầu đăng nhập</button>
+        </div>
+        <div class="lobby-actions">
+          <button id="btn-register-submit" class="btn-gold-primary" type="submit">Đăng Ký</button>
+        </div>
+        <div class="lobby-or"><span>ĐÃ CÓ TÀI KHOẢN?</span></div>
+        <button id="btn-show-login" class="btn-gold-secondary" type="button">Quay lại Đăng nhập</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- 2. SẢNH CHỜ CHÍNH THỨC (MAIN LOBBY) -->
+  <section id="main-lobby-screen" class="fullpage-scroll-overlay" hidden>
+    <div class="main-lobby-container">
+      <!-- Header Sảnh -->
+      <header class="lobby-header">
+        <div class="lobby-header-user">
+          <button id="btn-logout" class="btn-gold-secondary btn-sm" type="button" aria-label="Đăng xuất"
+            title="Đăng xuất">⎋</button>
+          <div class="lobby-user-profile">
+            <img src="/assets/arena/symbol-ga.png" class="avatar-img" alt="Avatar">
+            <div class="lobby-user-info">
+              <span id="lobby-username" class="player-name">Ngọc Anh</span>
+              <div class="balance-pill">
+                <span class="coin-icon">🪙</span>
+                <strong id="lobby-balance" class="balance-value">0</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="lobby-header-actions">
+          <button class="lobby-sound-toggle" type="button" data-sound-toggle aria-label="Tắt âm thanh"
+            aria-pressed="true">
+            <img src="/assets/arena/icon-sound.png" alt="" aria-hidden="true" />
+          </button>
+        </div>
+      </header>
+
+      <!-- 3 Chế độ chơi -->
+      <div class="game-modes-grid">
+        <!-- Chơi nhanh -->
+        <div class="mode-card">
+          <!-- Nhóm phần chữ để đẩy lên trên -->
+          <div class="card-header">
+            <h3 class="gold-title">CHƠI NHANH</h3>
+            <p class="mode-desc">Tự động ghép bạn vào bàn chơi phù hợp đang mở.</p>
+          </div>
+          <!-- Chèn ảnh vào giữa -->
+          <img src="/assets/arena/choi_nhanh.png" alt="Chơi nhanh" class="mode-image">
+          <!-- Nút bấm giữ ở dưới cùng -->
+          <button id="btn-quick-play" class="btn-gold-primary">Bắt Đầu Ngay</button>
+        </div>
+
+        <!-- Chơi với bạn -->
+        <div class="mode-card">
+          <div class="card-header">
+            <h3 class="gold-title">CHƠI VỚI BẠN</h3>
+            <p class="mode-desc">Tạo bàn mới hoặc nhập mã để tham gia với bạn bè.</p>
+          </div>
+          <img src="/assets/arena/play_with_friends.png" alt="Chơi với bạn" class="mode-image">
+          <button id="btn-toggle-friend-menu" type="button" class="btn-gold-primary">Cùng Vui</button>
+          <div id="my-friend-dropdown-menu" class="friend-options-dropdown" hidden>
+            <button id="btn-create-room" class="btn-gold-primary" style="margin-bottom: 10px;">Tạo Bàn Mới</button>
+            <div class="join-row">
+              <input id="join-room-code" type="text" placeholder="MÃ PHÒNG" maxlength="6" />
+              <button id="btn-join-room" class="btn-gold-secondary">Vào</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chọn bàn (Room List) -->
+        <div class="room-list-container">
+          <div class="room-list-header">
+            <h3 class="gold-title">DANH SÁCH BÀN ĐANG MỞ</h3>
+            <button id="btn-refresh-rooms" class="btn-gold-secondary btn-sm">↻ Làm mới</button>
+          </div>
+          <div class="room-grid" id="active-rooms-list">
+            <img src="/assets/arena/join_room.png" alt="Tham gia phòng" class="room-image">
+            <!-- Render động danh sách phòng ở đây bằng JS -->
+            <p class="mode-desc" style="text-align: center; width: 100%;">Đang tải danh sách bàn...</p>
+          </div>
+        </div>
+      </div>
+  </section>
+
+  <dialog id="forgot-password-dialog" class="custom-modal" aria-labelledby="forgot-password-title">
+    <div class="modal-card forgot-password-card">
+      <div class="modal-header">
+        <h3 id="forgot-password-title" class="gold-title">KHÔI PHỤC MẬT KHẨU</h3>
+        <button id="forgot-password-cancel" type="button" class="btn-modal-close" aria-label="Đóng">×</button>
+      </div>
+      <form id="forgot-password-form" class="settings-modal-body">
+        <label for="forgot-password-email">Email tài khoản</label>
+        <input id="forgot-password-email" type="email" required placeholder="Nhập email đã đăng ký" />
+        <p id="forgot-password-message" class="field-hint" hidden></p>
+        <button type="submit" class="btn-gold-primary">Gửi yêu cầu</button>
+      </form>
+    </div>
+  </dialog>
+
+  <dialog id="create-room-dialog" class="custom-modal" aria-labelledby="create-room-title">
+    <div class="modal-card create-room-card">
+      <div class="modal-header">
+        <h3 id="create-room-title" class="gold-title">TẠO BÀN MỚI</h3>
+        <button id="create-room-cancel" type="button" class="btn-modal-close" aria-label="Đóng">×</button>
+      </div>
+      <div class="settings-modal-body">
+        <label for="room-minimum-balance">Số xu tối thiểu để vào bàn</label>
+        <input id="room-minimum-balance" type="number" min="0" step="1" value="0" placeholder="0" />
+        <p class="field-hint">Đặt 0 nếu không yêu cầu mức xu tối thiểu.</p>
+        <button id="create-room-confirm" type="button" class="btn-gold-primary">Tạo bàn</button>
+      </div>
+    </div>
+  </dialog>
+
   <!-- Container chính thích ứng theo vùng nhìn thực tế của thiết bị -->
   <div class="arcade-viewport">
     <div class="arcade-stage" id="arcade-stage">
-
-      <!-- GIAO DIỆN SẢNH (LOBBY) TRƯỚC KHI VÀO PHÒNG -->
-      <section id="home" class="lobby-overlay" aria-labelledby="lobby-heading">
-        <div class="lobby-box">
-          <div class="lobby-brand">
-            <img src="/assets/arena/logo1.png" alt="Bầu Cua" class="lobby-logo" width="2079" height="756"
-              decoding="async" fetchpriority="high" />
-            <p class="lobby-tagline">VUI LÀ CHÍNH · TIỀN LÀ ẢO</p>
-          </div>
-          <form id="lobby-form" class="lobby-form">
-            <div class="input-group">
-              <label for="player-name">TÊN CỦA BẠN</label>
-              <input id="player-name" name="name" type="text" placeholder="Ví dụ: Thịnh Tu" minlength="2" maxlength="24"
-                autocomplete="nickname" required />
-            </div>
-            <div class="lobby-actions">
-              <button id="create-room" class="btn-gold-primary" type="submit" disabled>Tạo Phòng Mới</button>
-            </div>
-            <div class="lobby-or"><span>HOẶC NHẬP MÃ PHÒNG</span></div>
-            <div class="join-row">
-              <input id="room-code-input" name="code" type="text" placeholder="ABC123" maxlength="6"
-                pattern="[A-Za-z0-9]{6}" autocomplete="off" autocapitalize="characters" spellcheck="false" />
-              <button id="join-room" class="btn-gold-secondary" type="button" disabled>Vào Phòng</button>
-            </div>
-          </form>
-          <p id="lobby-status" class="lobby-notice" role="status" aria-live="polite">Đang kết nối đến máy chủ…</p>
-          <div class="lobby-badges">
-            <span>✦ Chuẩn bầu cua</span>
-            <span>✦ Tiền Ảo Giải Trí</span>
-            <span>✦ Lắc Tự Động</span>
-          </div>
-        </div>
-      </section>
 
       <!-- GIAO DIỆN SÒNG BẦU CUA CHÍNH (IN-GAME) -->
       <main id="game" class="game-arena" hidden>
@@ -116,8 +275,8 @@
                 <path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5" />
               </svg>
             </button>
-            <button id="sound-toggle" class="circle-btn" type="button" title="Bật/Tắt âm thanh" aria-label="Âm thanh"
-              aria-pressed="true">
+            <button id="sound-toggle" class="circle-btn" type="button" data-sound-toggle title="Bật/Tắt âm thanh"
+              aria-label="Âm thanh" aria-pressed="true">
               <img id="sound-icon" src="/assets/arena/icon-sound.png" alt="" aria-hidden="true" />
             </button>
             <button id="rules-toggle" class="circle-btn" type="button" title="Luật chơi & Hướng dẫn"
@@ -412,7 +571,9 @@
 
   <audio id="background-music" src="/assets/audio/tet-background.mp3" preload="metadata" loop hidden
     aria-hidden="true"></audio>
+  <script type="module" src="/src/auth_scr.js"></script>
   <script type="module" src="/src/main.js"></script>
+  <script type="module" src="/src/js/lobby.js"></script>
 </body>
 
 </html>

@@ -31,40 +31,28 @@ body {
   height: 100%;
   overflow: hidden;
   background: #090302;
-  font-family: 'Be Vietnam Pro', system-ui, -apple-system, sans-serif;
+  font-family: 'Nunito', system-ui, -apple-system, sans-serif;
   user-select: none;
   -webkit-user-select: none;
   color: #ffeed0;
 }
 
-/* ===================================================================
-   1. MÀN HÌNH NHẮC XOAY NGANG (MOBILE LANDSCAPE PROMPT)
-   =================================================================== */
 .rotate-prompt {
   display: none;
   position: fixed;
   inset: 0;
   z-index: 999999;
-  background: radial-gradient(circle at 50% 50%, #2e0d08 0%, #0f0403 80%, #000 100%);
   align-items: center;
   justify-content: center;
-  text-align: center;
   padding: 24px;
+  background: radial-gradient(circle at 50% 50%, #2e0d08 0%, #0f0403 80%, #000 100%);
+  text-align: center;
 }
 
 @media (orientation: portrait) and (max-width: 950px) {
   .rotate-prompt {
     display: flex;
   }
-}
-
-.rotate-card {
-  max-width: 380px;
-  background: rgba(36, 18, 14, 0.92);
-  border: 2px solid var(--border-gold);
-  border-radius: 20px;
-  padding: 32px 24px;
-  box-shadow: 0 0 50px rgba(220, 160, 50, 0.3), inset 0 0 20px rgba(0, 0, 0, 0.7);
 }
 
 .phone-rotate-anim {
@@ -121,7 +109,7 @@ body {
 }
 
 .rotate-card h2 {
-  font-family: 'Be Vietnam Pro', sans-serif;
+  font-family: 'Nunito', sans-serif;
   font-size: 18px;
   color: #ffd875;
   margin: 0 0 10px;
@@ -276,10 +264,10 @@ body.fullscreen-fit .arcade-stage,
 }
 
 .lobby-tagline {
-  font-family: 'Be Vietnam Pro', sans-serif;
+  font-family: 'Nunito', sans-serif;
   font-size: 11px;
   letter-spacing: 3px;
-  color: #ffda82;
+  color: #f2fa0a;
   margin: 4px 0 16px;
 }
 
@@ -290,7 +278,7 @@ body.fullscreen-fit .arcade-stage,
 
 .input-group label {
   display: block;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   letter-spacing: 1px;
   color: #f7d490;
@@ -320,12 +308,12 @@ body.fullscreen-fit .arcade-stage,
 .btn-gold-primary {
   width: 100%;
   height: 44px;
-  background: linear-gradient(180deg, #f7d277 0%, #c48b29 50%, #915e13 100%);
+  background: linear-gradient(180deg, #f7d277 0%, #fce14a 50%, #bc7b1a 100%);
   border: 1px solid #ffe9ad;
   border-radius: 12px;
   color: #2b1103;
-  font-family: 'Be Vietnam Pro', sans-serif;
-  font-size: 14px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 16px;
   font-weight: 800;
   letter-spacing: 0.5px;
   cursor: pointer;
@@ -351,10 +339,10 @@ body.fullscreen-fit .arcade-stage,
 
 .lobby-or {
   position: relative;
-  margin: 16px 0;
-  font-size: 10px;
-  letter-spacing: 1.5px;
-  color: #a88d71;
+  margin: 14px 0;
+  font-size: 12px;
+  letter-spacing: 1.2px;
+  color: #562a00;
 }
 
 .lobby-or::before,
@@ -1059,7 +1047,7 @@ body.bowl-overlay-active {
 .bowl-reveal-header h3 {
   margin: 0;
   color: #fff0bd;
-  font-family: 'Be Vietnam Pro', sans-serif;
+  font-family: 'Nunito', sans-serif;
   font-size: clamp(18px, 2.1vw, 30px);
   line-height: 1.1;
 }
@@ -1849,8 +1837,8 @@ button.bet-spot:active:not(:disabled) {
 }
 
 .gold-title {
-  font-family: 'Be Vietnam Pro', sans-serif;
-  font-size: 18px;
+  font-family: 'Baloo 2', 'Nunito', sans-serif;
+  font-size: 24px;
   font-weight: 800;
   color: #ffda78;
   margin: 0;
@@ -2226,4 +2214,864 @@ summary:focus-visible {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ===================================================================
+   BỔ SUNG: UI AUTH & MAIN LOBBY (CUỘN FULL PAGE)
+   =================================================================== */
+
+/* Ghi đè overflow để cho phép cuộn toàn bộ trang khi ở Auth/Lobby */
+body.scroll-mode,
+body.scroll-mode {
+  overflow: auto !important;
+  display: block;
+}
+
+body.scroll-mode .arcade-viewport {
+  display: none !important;
+}
+
+body.scroll-mode {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+body.scroll-mode::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.fullpage-scroll-overlay {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  background: rgba(12, 4, 3, 0.88);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 20px;
+  z-index: 1000;
+}
+
+.auth-box {
+  position: relative;
+  margin-top: 20px;
+  margin-bottom: 40px;
+}
+
+.lobby-sound-toggle {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  overflow: visible;
+  border: 1px solid rgba(111, 205, 235, 0.8);
+  border-radius: 50%;
+  background: rgba(2, 24, 48, 0.7);
+  cursor: pointer;
+}
+
+.lobby-sound-toggle img {
+  width: 44px;
+  height: 44px;
+  transform: none;
+  object-fit: contain;
+}
+
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 15px;
+  text-align: left;
+}
+
+.checkbox-group input[type="checkbox"] {
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  min-height: 18px;
+  margin: 0;
+  accent-color: #c48b29;
+}
+
+.checkbox-group label {
+  margin-bottom: 0;
+  font-size: 11px;
+  color: #dfcaa8;
+  white-space: nowrap;
+}
+
+.success-text {
+  color: #a8dfbc;
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.auth-text-button {
+  display: block;
+  margin: -4px 0 12px auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #3f4184;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.auth-text-button:hover {
+  color: #ffe9a8;
+  text-decoration: underline;
+}
+
+.social-login-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0 16px;
+  color: #3f4184;
+  font-size: 16px;
+}
+
+.social-login-divider::before,
+.social-login-divider::after {
+  content: '';
+  height: 1px;
+  flex: 1;
+  background: rgba(33, 131, 164, 0.744);
+}
+
+.social-login-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.social-login-button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: #fff;
+  font-family: Arial, sans-serif;
+  font-size: 19px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.google-social {
+  background: #fff;
+  color: #4285f4;
+  border: 1px solid #d9d9d9;
+}
+
+.facebook-social {
+  background: #1877f2;
+}
+
+.apple-social {
+  background: #050505;
+}
+
+.ios-only[hidden] {
+  display: none;
+}
+
+.forgot-password-card {
+  width: min(92vw, 420px);
+}
+
+.forgot-password-card .settings-modal-body>label {
+  display: block;
+  margin-bottom: 8px;
+  color: #ffe9a8;
+  font-weight: 800;
+}
+
+.forgot-password-card input {
+  width: 100%;
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid #4b96bd;
+  border-radius: 10px;
+  background: rgba(2, 16, 35, 0.86);
+  color: #fff8df;
+  font: inherit;
+}
+
+.google-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 10px;
+  width: 100%;
+  background: #ffffff;
+  color: #333333;
+  border-color: #cccccc;
+}
+
+.google-btn:hover:not(:disabled) {
+  background: #f1f1f1;
+}
+
+.google-icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* --- MAIN LOBBY CSS --- */
+.main-lobby-container {
+  width: min(100%, 900px);
+  margin: 0 auto;
+}
+
+.lobby-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: linear-gradient(145deg, rgba(42, 21, 16, 0.96), rgba(20, 10, 8, 0.98));
+  border: 1px solid var(--border-gold);
+  border-radius: 16px;
+  padding: 12px 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+}
+
+.btn-sm {
+  height: 32px;
+  font-size: 11px;
+  padding: 0 12px;
+}
+
+.lobby-user-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.lobby-header-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-right: auto;
+}
+
+.lobby-header-user #btn-logout {
+  order: 0;
+}
+
+.lobby-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.lobby-header-actions .lobby-sound-toggle {
+  position: static;
+}
+
+.lobby-header-user #btn-logout {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  min-width: 38px;
+  padding: 0;
+  font-size: 24px;
+  line-height: 1;
+}
+
+#sound-toggle {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  overflow: visible;
+}
+
+#sound-toggle img {
+  width: 44px;
+  height: 44px;
+  transform: none;
+}
+
+.create-room-card {
+  width: min(92vw, 420px);
+}
+
+.create-room-card .settings-modal-body>label {
+  display: block;
+  margin-bottom: 8px;
+  color: #ffe9a8;
+  font-weight: 800;
+}
+
+.create-room-card #room-minimum-balance {
+  width: 100%;
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid #4b96bd;
+  border-radius: 10px;
+  background: rgba(2, 16, 35, 0.86);
+  color: #fff8df;
+  font: inherit;
+}
+
+.create-room-card .field-hint {
+  margin: 8px 0 16px;
+}
+
+.lobby-user-profile .avatar-img {
+  width: 60px;
+  height: 60px;
+}
+
+.lobby-user-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.lobby-user-info .player-name {
+  max-width: 260px;
+  color: #fff2b0;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+/*Big change*/
+.game-modes-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  max-width: 1420px;
+  width: 100%;
+  margin: 36px auto 0 auto;
+}
+
+.game-modes-grid .mode-card,
+.game-modes-grid .room-list-container {
+  padding: 28px 24px;
+  border-radius: 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 320px;
+  box-sizing: border-box;
+}
+
+.game-modes-grid .join-row {
+  margin-top: 16px;
+  gap: 10px;
+}
+
+/* Big change */
+
+.mode-card {
+  background: linear-gradient(145deg, rgba(30, 15, 11, 0.9), rgba(15, 7, 5, 0.9));
+  border: 1px solid #946931;
+  border-radius: 16px;
+  padding: 24px;
+  text-align: center;
+}
+
+.mode-desc {
+  font-size: 12px;
+  color: #dfcaa8;
+  margin: 10px 0 20px;
+  line-height: 1.5;
+}
+
+.room-list-container {
+  background: rgba(20, 10, 8, 0.95);
+  border: 1px solid #946931;
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.room-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #573a21;
+  padding-bottom: 12px;
+}
+
+.room-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.room-item {
+  background: rgba(40, 20, 15, 0.8);
+  border: 1px solid #7c5324;
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.room-item-info strong {
+  display: block;
+  color: #ffda82;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.room-item-info span {
+  color: #bfa78a;
+  font-size: 11px;
+}
+
+/* Auth and lobby theme: lighter surfaces, while the game arena keeps its original look. */
+body.scroll-mode {
+  background: #071c35;
+  color: #f7f1dd;
+}
+
+body.scroll-mode .fullpage-scroll-overlay {
+  background:
+    linear-gradient(180deg, rgba(3, 17, 38, 0.42), rgba(3, 17, 38, 0.72)),
+    url('/assets/arena/waiting-zone.jpg') center / cover fixed;
+  backdrop-filter: none;
+}
+
+body.scroll-mode #auth-screen {
+  background: url('/assets/arena/welcome.jpg') center / cover no-repeat;
+}
+
+body.scroll-mode .lobby-box,
+body.scroll-mode .lobby-header,
+body.scroll-mode .mode-card,
+body.scroll-mode .room-list-container {
+  background: linear-gradient(145deg, rgba(8, 49, 83, 0.96), rgba(4, 25, 52, 0.96));
+  border-color: #3fa4d2;
+  box-shadow: 0 14px 34px rgba(0, 9, 24, 0.45), inset 0 0 24px rgba(34, 150, 203, 0.12);
+}
+
+body.scroll-mode .lobby-box {
+  color: #f7f1dd;
+  border-radius: 12px;
+  padding: 28px 30px;
+}
+
+body.scroll-mode .lobby-tagline,
+body.scroll-mode .input-group label,
+body.scroll-mode .gold-title,
+body.scroll-mode .room-item-info strong {
+  color: #3f4184;
+}
+
+body.scroll-mode .mode-desc,
+body.scroll-mode .checkbox-group label,
+body.scroll-mode .room-item-info span {
+  color: #31388c;
+}
+
+body.scroll-mode .input-group input,
+body.scroll-mode .join-row input,
+body.scroll-mode #room-minimum-balance {
+  background: rgba(2, 16, 35, 0.86);
+  border-color: #4b96bd;
+  color: #fff8df;
+}
+
+body.scroll-mode .input-group input::placeholder,
+body.scroll-mode .join-row input::placeholder,
+body.scroll-mode #room-minimum-balance::placeholder {
+  color: #98b5c5;
+}
+
+body.scroll-mode .room-list-header {
+  border-bottom-color: rgba(96, 182, 222, 0.45);
+}
+
+body.scroll-mode .room-item {
+  background: rgba(6, 38, 68, 0.84);
+  border-color: #327ca6;
+}
+
+body.scroll-mode .btn-gold-secondary:not(.google-btn) {
+  color: #fff5d1;
+  background: rgba(8, 62, 96, 0.92);
+  border-color: #4aa9d5;
+}
+
+body.scroll-mode .game-modes-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+body.scroll-mode .mode-card {
+  min-height: 210px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-radius: 12px;
+}
+
+body.scroll-mode .room-list-container {
+  border-radius: 12px;
+}
+
+/* Tăng kích thước ảnh đại diện cho các card chế độ chơi */
+.mode-card img,
+.mode-image {
+  display: block;
+  width: 100%;
+  max-width: 240px; /* Tăng/giảm con số này nếu muốn ảnh to hơn nữa (VD: 180px, 200px) */
+  height: auto;
+  max-height: 120px;
+  object-fit: contain;
+  margin: 0 auto 12px auto; /* Căn giữa ảnh và tạo khoảng cách với tiêu đề bên dưới */
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.4)); /* Tạo độ nổi cho ảnh */
+}
+
+/*Dành cho Cùng vui*/
+.friend-options-dropdown {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+  width: 100%;
+}
+
+.friend-options-dropdown[hidden] {
+  display: none !important;
+}
+
+@media (max-width: 640px) {
+  body.scroll-mode .game-modes-grid {
+    grid-template-columns: 1fr;
+  }
+
+  body.scroll-mode .lobby-box {
+    padding: 24px 20px;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 600px) {
+  body.scroll-mode .fullpage-scroll-overlay {
+    min-height: 100dvh;
+    padding: 10px 16px;
+    align-items: flex-start;
+  }
+
+  body.scroll-mode .auth-box {
+    width: min(92vw, 460px);
+    margin: 0 auto 16px;
+    padding: 14px 22px;
+  }
+
+  body.scroll-mode .auth-box .lobby-logo {
+    width: min(38vw, 190px);
+    max-height: 14dvh;
+  }
+
+  body.scroll-mode .auth-box .lobby-tagline {
+    margin: 2px 0 8px;
+    font-size: 9px;
+  }
+
+  body.scroll-mode .auth-box .input-group {
+    margin-bottom: 7px;
+  }
+
+  body.scroll-mode .auth-box .input-group input,
+  body.scroll-mode .auth-box .join-row input {
+    height: 34px;
+    font-size: 12px;
+  }
+
+  body.scroll-mode .auth-box .btn-gold-primary,
+  body.scroll-mode .auth-box .btn-gold-secondary {
+    height: 36px;
+    font-size: 12px;
+  }
+
+  body.scroll-mode .main-lobby-container {
+    width: min(100%, 980px);
+  }
+
+  body.scroll-mode .lobby-header {
+    min-height: 48px;
+    padding: 6px 12px;
+    margin-bottom: 10px;
+    border-radius: 9px;
+  }
+
+  body.scroll-mode .lobby-user-profile {
+    gap: 7px;
+  }
+
+  body.scroll-mode .lobby-user-profile .avatar-img {
+    width: 46px;
+    height: 46px;
+  }
+
+  body.scroll-mode .lobby-sound-toggle,
+  body.scroll-mode #sound-toggle {
+    width: 40px;
+    height: 40px;
+  }
+
+  body.scroll-mode .lobby-user-info .player-name {
+    max-width: 180px;
+    font-size: 14px;
+  }
+
+  body.scroll-mode .game-modes-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  body.scroll-mode .mode-card {
+    min-height: 132px;
+    padding: 12px;
+    border-radius: 9px;
+  }
+
+  body.scroll-mode .mode-card .gold-title {
+    font-size: 24px;
+  }
+
+  body.scroll-mode .mode-desc {
+    margin: 5px 0 10px;
+    font-size: 10px;
+  }
+
+  body.scroll-mode .room-list-container {
+    padding: 10px;
+    border-radius: 9px;
+  }
+
+  body.scroll-mode .room-list-header {
+    margin-bottom: 8px;
+    padding-bottom: 7px;
+  }
+
+  body.scroll-mode .room-list-header .gold-title {
+    font-size: 15px;
+  }
+
+  body.scroll-mode .room-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 7px;
+  }
+
+  body.scroll-mode .room-item {
+    min-width: 0;
+    padding: 7px;
+    border-radius: 7px;
+  }
+
+  body.scroll-mode .room-item-info strong {
+    font-size: 11px;
+  }
+
+  body.scroll-mode .room-item-info span {
+    font-size: 9px;
+  }
+
+  body.scroll-mode .room-item .btn-sm {
+    height: 26px;
+    padding: 0 7px;
+    font-size: 9px;
+  }
+}
+
+/* Landscape lobby composition follows the reference game menu: header above,
+   three large destination panels below. Existing controls keep their IDs. */
+@media (orientation: landscape) and (min-width: 700px) {
+  body.scroll-mode #main-lobby-screen {
+    padding: 0 0 20px 0;
+  }
+
+  body.scroll-mode #main-lobby-screen .main-lobby-container {
+    width: 100%;
+    max-width: 1600px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  body.scroll-mode #main-lobby-screen .lobby-header {
+    width: 100%;
+    min-height: 78px;
+    margin: 0;
+    padding: 10px 28px;
+    border: 0;
+    border-bottom: 1px solid rgba(107, 191, 226, 0.6);
+    border-radius: 0;
+    background: rgba(32, 32, 38, 0.97);
+    box-shadow: 0 5px 18px rgba(0, 0, 0, 0.38);
+  }
+
+  body.scroll-mode #main-lobby-screen .game-modes-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 24px;
+    align-items: stretch;
+  }
+
+  body.scroll-mode #main-lobby-screen .mode-card,
+  body.scroll-mode #main-lobby-screen .room-list-container {
+    min-height: 400px;
+    margin: 0;
+    border-radius: 14px;
+    padding: 28px 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-sizing: border-box;
+  }
+
+  body.scroll-mode #main-lobby-screen .mode-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  body.scroll-mode #main-lobby-screen .card-header {
+    text-align: center;
+    width: 100%;
+  }
+
+  /* Khung chứa danh sách bàn */
+  body.scroll-mode #main-lobby-screen .room-list-container {
+    height: auto !important;
+    padding: 15px;
+  }
+
+  /* Khu vực danh sách phòng */
+  body.scroll-mode #main-lobby-screen #active-rooms-list {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 160px;
+    /* Chiều cao vừa đủ gọn gàng */
+    padding: 15px 0;
+  }
+
+  /* Giới hạn kích thước ảnh bàn cờ ở giữa */
+  body.scroll-mode #main-lobby-screen .room-image {
+    max-height: 80px;
+    /* Khống chế ảnh không bị bung to */
+    width: auto;
+    object-fit: contain;
+    margin-bottom: 10px;
+    display: block;
+  }
+
+  body.scroll-mode #main-lobby-screen .mode-image {
+    width: 150px;
+    height: auto;
+    margin: auto 0;
+    object-fit: contain;
+  }
+
+  body.scroll-mode #main-lobby-screen .btn-gold-primary {
+    width: 100%;
+    margin-top: auto;
+  }
+
+  body.scroll-mode #main-lobby-screen .mode-image,
+  body.scroll-mode #main-lobby-screen .room-image {
+    max-height: 120px;
+    width: auto;
+    object-fit: contain;
+    display: block;
+    margin: auto;
+  }
+
+  body.scroll-mode #main-lobby-screen .mode-card:nth-child(1) {
+    background: linear-gradient(145deg, rgba(30, 190, 231, 0.96), rgba(4, 76, 136, 0.96));
+    border-color: #6edcff;
+  }
+
+  body.scroll-mode #main-lobby-screen .mode-card:nth-child(2) {
+    background: linear-gradient(145deg, rgba(235, 42, 157, 0.96), rgba(101, 20, 102, 0.96));
+    border-color: #ff8bd8;
+  }
+
+  body.scroll-mode #main-lobby-screen .room-list-container {
+    background: linear-gradient(145deg, rgba(241, 174, 43, 0.96), rgba(132, 66, 17, 0.96));
+    border-color: #ffe09a;
+  }
+
+  body.scroll-mode #main-lobby-screen .mode-card .gold-title,
+  body.scroll-mode #main-lobby-screen .room-list-container .gold-title,
+  body.scroll-mode #main-lobby-screen .mode-desc,
+  body.scroll-mode #main-lobby-screen .room-item-info strong,
+  body.scroll-mode #main-lobby-screen .room-item-info span {
+    color: #fffdf1;
+    text-shadow: 0 2px 3px rgba(0, 0, 0, 0.35);
+  }
+
+  body.scroll-mode #main-lobby-screen .room-list-header {
+    border-bottom-color: rgba(255, 245, 194, 0.45);
+  }
+
+  body.scroll-mode #main-lobby-screen .room-grid {
+    grid-template-columns: 1fr;
+    max-height: 184px;
+    overflow-y: auto;
+  }
+
+  body.scroll-mode #main-lobby-screen .room-item {
+    background: rgba(75, 35, 10, 0.38);
+    border-color: rgba(255, 231, 161, 0.6);
+  }
+}
+
+body.scroll-mode #auth-screen .auth-box {
+  background: rgba(255, 255, 255, 0.46);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  border-radius: 24px;
+  box-shadow: 0 22px 60px rgba(76, 57, 121, 0.24);
+  color: #261d3d;
+}
+
+body.scroll-mode #auth-screen .auth-box .lobby-tagline {
+  color: #e1ff00;
+}
+
+body.scroll-mode #auth-screen .auth-box .gold-title,
+body.scroll-mode #auth-screen .auth-box .input-group label {
+  color: #31388c;
+}
+
+body.scroll-mode #auth-screen .auth-box .input-group input {
+  background: rgba(248, 248, 255, 0.95);
+  border-color: #b9a8da;
+  color: #261d3d;
+}
+
+body.scroll-mode #auth-screen .auth-box .input-group input:focus {
+  border-color: #b33df0;
+  box-shadow: 0 0 0 3px rgba(179, 61, 240, 0.15);
+}
+
+body.scroll-mode #auth-screen .auth-box .auth-text-button,
+body.scroll-mode #auth-screen .auth-box .social-login-divider {
+  color: #2f3295;
 }

@@ -1,3 +1,5 @@
+import jwt from 'jsonwebtoken';
+import User from './database/user_server.js';
 import { randomBytes, randomInt, randomUUID } from 'node:crypto';
 
 const CAPACITY = 20;
@@ -42,14 +44,15 @@ export class GameService {
     this.autoStart = options.autoStart ?? true;
     this.bettingMs = options.bettingMs ?? 30_000;
     this.resultMs = options.resultMs ?? 12000;
-    this.onKick = options.onKick ?? (() => {});
+    this.onKick = options.onKick ?? (() => { });
     this.hostGraceMs = options.hostGraceMs ?? 5000;
     this.disconnectTtlMs = options.disconnectTtlMs ?? 5 * 60_000;
     this.roomTtlMs = options.roomTtlMs ?? 30 * 60_000;
     this.maxRooms = options.maxRooms ?? 100;
+    this.requireAuth = options.requireAuth ?? false;
     this.randomIntFn = options.randomIntFn ?? randomInt;
-    this.onState = options.onState ?? (() => {});
-    this.onReplace = options.onReplace ?? (() => {});
+    this.onState = options.onState ?? (() => { });
+    this.onReplace = options.onReplace ?? (() => { });
     this.cleanupTimer = setInterval(() => this.cleanup(), options.cleanupIntervalMs ?? 30_000);
     this.cleanupTimer.unref();
   }
@@ -65,13 +68,25 @@ export class GameService {
     };
   }
 
-  player(name, socketId) {
+  player(name, socketId, dbId, balance = this.config.initialBalance) {
     return {
-      id: randomUUID(), token: randomBytes(32).toString('base64url'), name,
+      id: randomUUID(), dbId, token: randomBytes(32).toString('base64url'), name,
       socketId, connected: true, disconnectedAt: null,
-      balance: this.config.initialBalance, bets: this.emptyBets(), eligible: false,
+      balance, bets: this.emptyBets(), eligible: false, // Lấy balance trực tiếp từ DB
       stats: this.emptyStats(), lastResult: null, requests: new Map(),
     };
+  }
+
+  async verifyToken(token) {
+    requireCondition(token, 'UNAUTHORIZED', 'Vui lòng đăng nhập để chơi.');
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const user = await User.findById(decoded.id);
+      requireCondition(user, 'UNAUTHORIZED', 'Tài khoản không còn tồn tại.');
+      return user;
+    } catch {
+      throw new GameError('UNAUTHORIZED', 'Phiên đăng nhập không hợp lệ.');
+    }
   }
 
   name(value) {
@@ -102,6 +117,7 @@ export class GameService {
     }
     return {
       code: room.code, gameId: room.gameId, capacity: CAPACITY, phase: room.phase, hostId: room.hostId,
+      minimumBalance: room.minimumBalance,
       roundNumber: room.roundNumber, roundId: room.roundId, revision: room.revision,
       serverNow: Date.now(), deadline: room.deadline, paused: room.paused, bettingMs: room.bettingMs,
       locked: room.locked, remainingMs: room.remainingMs,
@@ -141,8 +157,14 @@ export class GameService {
     try {
       requireCondition(payload && typeof payload === 'object' && !Array.isArray(payload),
         'INVALID_PAYLOAD', 'Dữ liệu gửi lên không hợp lệ.');
-      if (event === 'room:create') return this.create(socketId, payload);
-      if (event === 'room:join') return this.join(socketId, payload);
+      if (event === 'room:create') {
+        if (this.requireAuth || payload.token) return this.create(socketId, payload);
+        return this.createLocal(socketId, payload);
+      }
+      if (event === 'room:join') {
+        if (this.requireAuth || payload.token) return this.join(socketId, payload);
+        return this.joinLocal(socketId, payload);
+      }
       if (event === 'room:resume') return this.resume(socketId, payload);
       const { room, player } = this.member(socketId);
       // Enforce the deadline even if the event loop has not run its timer yet.
@@ -188,7 +210,7 @@ export class GameService {
     this.memberships.set(player.socketId, { code: room.code, playerId: player.id });
   }
 
-  create(socketId, payload) {
+  createLocal(socketId, payload) {
     requireCondition(!this.memberships.has(socketId), 'ALREADY_IN_ROOM', 'Hãy rời phòng hiện tại trước.');
     const name = this.name(payload.name);
     this.cleanup();
@@ -204,7 +226,7 @@ export class GameService {
       revealTimer: null, hostTimer: null, updatedAt: Date.now(),
       phaseTimer: null, deadline: null, remainingMs: null, paused: false, locked: false,
       bettingMs: this.bettingMs,
-      forcedDice: null, demoRound: false,
+      minimumBalance: 0, forcedDice: null, demoRound: false,
     };
     this.rooms.set(code, room);
     this.addPlayer(room, player);
@@ -213,7 +235,38 @@ export class GameService {
     return this.success(room, player, true);
   }
 
-  join(socketId, payload) {
+  async create(socketId, payload) {
+    const dbUser = await this.verifyToken(payload.token); // Đọc Token
+    requireCondition(!this.memberships.has(socketId), 'ALREADY_IN_ROOM', 'Hãy rời phòng hiện tại trước.');
+    const name = this.name(dbUser.username);
+    const minimumBalance = payload.minimumBalance ?? 0;
+    requireCondition(Number.isSafeInteger(minimumBalance) && minimumBalance >= 0 && minimumBalance <= MAX_BALANCE,
+      'INVALID_AMOUNT', 'Số xu tối thiểu không hợp lệ.');
+    requireCondition(Number(dbUser.balance) >= minimumBalance, 'INSUFFICIENT_BALANCE',
+      'Số xu trong ví chưa đạt mức tối thiểu đã chọn.');
+    this.cleanup();
+    requireCondition(this.rooms.size < this.maxRooms, 'SERVER_FULL', 'Máy chủ đang đầy. Vui lòng thử lại sau.');
+    let code;
+    do {
+      code = Array.from({ length: 6 }, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[randomInt(32)]).join('');
+    } while (this.rooms.has(code));
+    const player = this.player(name, socketId, dbUser._id, dbUser.balance);
+    const room = {
+      code, gameId: randomUUID(), hostId: player.id, players: new Map(), phase: 'waiting',
+      roundNumber: 0, roundId: null, revision: 0, dice: [], history: [],
+      revealTimer: null, hostTimer: null, updatedAt: Date.now(),
+      phaseTimer: null, deadline: null, remainingMs: null, paused: false, locked: false,
+      bettingMs: this.bettingMs,
+      minimumBalance, forcedDice: null, demoRound: false,
+    };
+    this.rooms.set(code, room);
+    this.addPlayer(room, player);
+    if (this.autoStart) this.openRound(room);
+    this.changed(room);
+    return this.success(room, player, true);
+  }
+
+  joinLocal(socketId, payload) {
     requireCondition(!this.memberships.has(socketId), 'ALREADY_IN_ROOM', 'Hãy rời phòng hiện tại trước.');
     requireCondition(typeof payload.code === 'string' && /^[A-Z0-9]{6}$/.test(payload.code),
       'INVALID_CODE', 'Mã phòng gồm 6 chữ cái hoặc chữ số viết hoa.');
@@ -225,6 +278,28 @@ export class GameService {
     requireCondition(![...room.players.values()].some(player => player.name.toLocaleLowerCase('vi') === name.toLocaleLowerCase('vi')),
       'NAME_TAKEN', 'Tên này đã có trong phòng. Vui lòng chọn tên khác.');
     const player = this.player(name, socketId);
+    player.eligible = this.autoStart && room.phase === 'betting';
+    this.addPlayer(room, player);
+    this.scheduleHostTransfer(room);
+    this.changed(room);
+    return this.success(room, player, true);
+  }
+
+  async join(socketId, payload) {
+    const dbUser = await this.verifyToken(payload.token);
+    requireCondition(!this.memberships.has(socketId), 'ALREADY_IN_ROOM', 'Hãy rời phòng hiện tại trước.');
+    requireCondition(typeof payload.code === 'string' && /^[A-Z0-9]{6}$/.test(payload.code),
+      'INVALID_CODE', 'Mã phòng gồm 6 chữ cái hoặc chữ số viết hoa.');
+    const room = this.rooms.get(payload.code);
+    requireCondition(room, 'ROOM_NOT_FOUND', 'Không tìm thấy phòng. Kiểm tra lại mã phòng.');
+    requireCondition(!room.locked, 'ROOM_LOCKED', 'Phòng đang khóa, chưa nhận người chơi mới.');
+    requireCondition(Number(dbUser.balance) >= room.minimumBalance, 'INSUFFICIENT_BALANCE',
+      'Số xu trong ví chưa đạt mức tối thiểu của bàn.');
+    const name = this.name(dbUser.username);
+    requireCondition(room.players.size < CAPACITY, 'ROOM_FULL', 'Phòng đã đủ 20 người chơi.');
+    requireCondition(![...room.players.values()].some(player => player.name.toLocaleLowerCase('vi') === name.toLocaleLowerCase('vi')),
+      'NAME_TAKEN', 'Tên này đã có trong phòng. Vui lòng chọn tên khác.');
+    const player = this.player(name, socketId, dbUser._id, dbUser.balance);
     player.eligible = this.autoStart && room.phase === 'betting';
     this.addPlayer(room, player);
     this.scheduleHostTransfer(room);
@@ -459,9 +534,14 @@ export class GameService {
       requireCondition(room.phase !== 'revealing', 'WRONG_PHASE', 'Chờ lắc xong để cấp xu.');
       requireCondition(Number.isSafeInteger(payload.amount) && payload.amount > 0 && payload.amount <= MAX_AMOUNT &&
         target.balance + payload.amount + 4 * totalBets(target.bets) <= MAX_BALANCE,
-      'INVALID_AMOUNT', 'Số xu cấp phải là số nguyên từ 1 đến 1 tỷ và không vượt giới hạn ví.');
+        'INVALID_AMOUNT', 'Số xu cấp phải là số nguyên từ 1 đến 1 tỷ và không vượt giới hạn ví.');
       target.balance += payload.amount;
       target.stats.highestBalance = Math.max(target.stats.highestBalance, target.balance);
+      // [MỚI] Đồng bộ xu được Host tặng vào DB
+      if (target.dbId) {
+        User.findByIdAndUpdate(target.dbId, { $inc: { balance: payload.amount } })
+          .catch(err => console.error('Lỗi DB:', err));
+      }
     } else if (event === 'host:kick') {
       requireCondition(target.id !== host.id, 'INVALID_TARGET', 'Hãy dùng nút rời phòng để rời bàn.');
       requireCondition(room.phase !== 'revealing', 'WRONG_PHASE', 'Chờ kết quả trước khi đuổi người chơi.');
@@ -489,6 +569,10 @@ export class GameService {
       const totalReturn = calculateReturn(player.bets, dice);
       const profit = totalReturn - totalBet;
       player.balance += totalReturn;
+      if (player.dbId) {
+        User.findByIdAndUpdate(player.dbId, { $inc: { balance: profit } })
+          .catch(err => console.error('Lỗi DB:', err));
+      }
       player.stats.gamesPlayed += 1;
       player.stats[profit > 0 ? 'wins' : profit < 0 ? 'losses' : 'breakEven'] += 1;
       player.stats.highestBalance = Math.max(player.stats.highestBalance, player.balance);
