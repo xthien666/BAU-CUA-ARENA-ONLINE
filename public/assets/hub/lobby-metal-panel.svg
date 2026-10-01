@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420" height="90" viewBox="0 0 420 90" preserveAspectRatio="none" fill="none">
+  <defs>
+    <linearGradient id="metal" x2="0" y2="1"><stop stop-color="#fff6da"/><stop offset=".04" stop-color="#d9bb87"/><stop offset=".26" stop-color="#9e7346"/><stop offset=".51" stop-color="#6d4b31"/><stop offset=".7" stop-color="#3e291e"/><stop offset=".87" stop-color="#8d622f"/><stop offset=".96" stop-color="#ffdc7c"/><stop offset="1" stop-color="#fff2bd"/></linearGradient>
+    <linearGradient id="edge" x2="0" y2="1"><stop stop-color="#fff9e6"/><stop offset=".55" stop-color="#a27d41"/><stop offset="1" stop-color="#ffe9a0"/></linearGradient>
+    <linearGradient id="shine" x2="0" y2="1"><stop stop-color="#fff8dc" stop-opacity=".48"/><stop offset="1" stop-color="#fff8dc" stop-opacity=".03"/></linearGradient>
+    <pattern id="facets" width="26" height="24" patternUnits="userSpaceOnUse"><path d="m0 0 13 12L26 0M0 24l13-12 13 12" stroke="#ffedbd" stroke-opacity=".06"/><path d="m0 0 13 12L0 24M26 0 13 12l13 12" fill="#24160d" fill-opacity=".13"/></pattern>
+  </defs>
+  <path d="M2 2h416l-26 62q-8 20-30 20H58q-22 0-30-20Z" fill="url(#metal)" stroke="url(#edge)" stroke-width="2.5"/>
+  <path d="M4 3h412l-26 60q-8 19-28 19H58q-20 0-28-19Z" fill="url(#facets)"/>
+  <path d="M17 5h386q-2 15-40 18H57Q19 20 17 5Z" fill="url(#shine)"/>
+  <path d="M55 79h310" stroke="#fff3bf" stroke-opacity=".55"/>
+</svg>

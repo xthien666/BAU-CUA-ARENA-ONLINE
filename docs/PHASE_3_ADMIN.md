@@ -13,6 +13,8 @@ Cập nhật ngày 01/10/2026. Bản này chạy một Node server và PostgreSQ
 
 ## Đã thực hiện
 
+- Trang **Dọn dữ liệu** cho phép chọn thời hạn, xem trước và xác nhận xóa vĩnh viễn phòng đã đóng, người chơi đã xóa mềm và nhật ký cũ. Giữ Admin/dữ liệu đang hoạt động; xem [quy tắc và cách sử dụng](ADMIN_DATABASE_CLEANUP.md). Chạy migration mới trước khi khởi động backend phiên bản này.
+
 - Tổng quan: kết nối/phòng thực từ engine; số tài khoản, cược chờ, ván quá hạn, xu cấp/thưởng từ DB. Phiên đăng nhập không được gọi là số người online.
 - Tìm người theo ID/username/email/tên hiển thị; xem ví, cược chờ và giao dịch gần đây; ban/gỡ ban/xóa mềm có lý do. Ban có hạn tự hết khi đăng nhập lại; các phiên đã thu hồi không sống lại.
 - Cấp xu qua ledger, hiển thị số dư trước/sau, dự phòng khả năng trả thưởng; requestId chống cấp lại và từ chối dùng cùng mã cho nội dung khác.

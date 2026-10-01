@@ -249,6 +249,9 @@ export function createAuth({ onAuthenticated } = {}) {
 
   function acceptSession(data) {
     currentUser = data?.user || null;
+    if (currentUser && Number.isSafeInteger(data?.wallet?.balance)) {
+      currentUser = { ...currentUser, balance: data.wallet.balance };
+    }
     csrfToken = data?.csrfToken || csrfToken;
     if (currentUser && typeof onAuthenticated === 'function') {
       onAuthenticated({

@@ -37,6 +37,7 @@
   /* Layout — Center Stage (Clock & Cards) */
   --center-stage-top: 13.5%;
   --center-stage-side: 17%;
+  --center-stage-player-gap: 25px;
   --center-stage-height: 21.5%;
   --center-stage-top-mobile: 13.5%;
   --center-stage-height-mobile: 20.5%;
@@ -250,7 +251,7 @@ body {
   position: absolute;
   inset: -28px;
   z-index: 0;
-  background: url('/assets/arena/background-complete1.png') center / cover no-repeat;
+  background: url('/assets/arena/backgroud.png') center / cover no-repeat;
   filter: blur(18px) brightness(0.42) saturate(0.8);
   transform: scale(1.06);
   pointer-events: none;
@@ -301,7 +302,7 @@ body {
   min-height: 0;
   max-width: none;
   max-height: none;
-  background: url('/assets/arena/background-complete1.png') center center / 100% 100% no-repeat;
+  background: url('/assets/arena/backgroud.png') center center / 100% 100% no-repeat;
   box-shadow: 0 0 70px rgba(0, 0, 0, 0.95), 0 0 140px rgba(185, 30, 20, 0.25);
   overflow: hidden;
   transform: scale(var(--stage-scale, 1));
@@ -1054,7 +1055,8 @@ body.fullscreen-fit .arcade-stage,
 .center-stage-top {
   position: absolute;
   top: var(--center-stage-top);
-  left: var(--center-stage-side);
+  /* Keep the clock clear of the player list, including display safe areas. */
+  left: max(var(--center-stage-side), calc(max(var(--sidebar-side), var(--safe-left)) + var(--sidebar-width) + var(--center-stage-player-gap)));
   right: var(--center-stage-side);
   height: var(--center-stage-height);
   z-index: 25;
@@ -3636,9 +3638,10 @@ summary:focus-visible {
 
 @media (prefers-reduced-motion: reduce) {
 
-  *,
-  *::before,
-  *::after {
+  /* Explicitly requested lobby card motion keeps its own timing and lifecycle. */
+  *:not(:where(.hub-view[data-force-motion="true"] .hub-card *)),
+  *:not(:where(.hub-view[data-force-motion="true"] .hub-card *))::before,
+  *:not(:where(.hub-view[data-force-motion="true"] .hub-card *))::after {
     scroll-behavior: auto !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;

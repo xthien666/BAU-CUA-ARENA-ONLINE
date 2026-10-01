@@ -76,10 +76,12 @@ export function createAccountPanel({ auth, onProfile, onSignedOut }) {
     items('history', rounds.map(round => `${date(round.settledAt)} · phòng ${round.roomCode} · ván ${round.roundNumber} · cược ${format(round.totalBet)}, nhận ${format(round.totalReturn)} xu`));
     status('Ví và lịch sử được lấy từ PostgreSQL.');
   }
-  document.getElementById('hub-auth-profile')?.addEventListener('click', () => {
+  function openProfile() {
     find('profile').hidden = false; find('reset').hidden = true; offset = 0; open();
     work(find('close'), load);
-  });
+  }
+  document.getElementById('hub-auth-profile')?.addEventListener('click', openProfile);
+  document.getElementById('hub-account-wallet-btn')?.addEventListener('click', openProfile);
   find('prev').onclick = () => { offset = Math.max(0, offset - 10); work(find('prev'), async () => { await transactions(); status('Đã tải lịch sử.'); }); };
   find('next').onclick = () => { offset += 10; work(find('next'), async () => { await transactions(); status('Đã tải lịch sử.'); }); };
   find('profile-form').onsubmit = event => {

@@ -15,8 +15,12 @@ dist-ssr
 .env.*
 !.env.example
 .tools/
-videos/**/.hyperframes/
-videos/**/.hf-tmp/
+# Local source footage; published WebP assets live in public/assets/hub.
+media-sources/
+# Generated animation preview caches.
+.hyperframes/
+.hf-tmp/
+.thumbnails/
 
 # Editor directories and files
 .vscode/*

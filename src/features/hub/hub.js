@@ -4,7 +4,8 @@
  * All animation, rewarded-ad state machine, and Socket.IO wiring.
  */
 
-import { createDragonPlayback } from './dragon-video.js';
+import { createCardMotion } from './card-motion.js';
+import { createFriendMotion } from './friend-motion.js';
 
 // ── Rewarded-Ad State Machine ──────────────────────────────────
 const AD_STATES = ['idle', 'loading_ad', 'playing_ad', 'completed', 'granting_reward', 'success', 'cancelled', 'error'];
@@ -96,14 +97,12 @@ export function createHub({ enterRoom, socket, audioEnabled, notice }) {
 
   // Gather elements
   const get = id => document.getElementById(id);
-  const dragonPlayback = createDragonPlayback(get('hub-dragon-video'));
-  const lionPlayback = createDragonPlayback(get('hub-lion-video'));
-  const tablePlayback = createDragonPlayback(get('hub-table-video'));
+  const dragonPlayback = createCardMotion(get('hub-dragon-motion'));
+  const friendPlayback = createFriendMotion(get('hub-friend-motion'), get('hub-friend-clip'));
+  const tablePlayback = createCardMotion(get('hub-table-motion'));
 
   // ── Show/hide hub ──────────────────────────────────────────────
   let hubVisible = false;
-  let cardAnimationsPaused = false;
-  let hubAnimObserver = null;
 
   function showHub(playerName) {
     const nameEl = get('hub-player-name');
@@ -111,8 +110,9 @@ export function createHub({ enterRoom, socket, audioEnabled, notice }) {
 
     hubEl.hidden = false;
     hubVisible = true;
+    hubEl.style.setProperty('--hub-motion-state', 'running');
     dragonPlayback.setVisible(true);
-    lionPlayback.setVisible(true);
+    friendPlayback.setVisible(true);
     tablePlayback.setVisible(true);
 
     // The hidden lobby input can leave the fixed arcade viewport scrolled.
@@ -137,112 +137,32 @@ export function createHub({ enterRoom, socket, audioEnabled, notice }) {
       animateParticles();
     }
 
-    // Start card spark effects
-    startCardSparks();
-    observeHubVisibility();
   }
 
   function hideHub() {
     hubEl.hidden = true;
     hubVisible = false;
+    hubEl.style.setProperty('--hub-motion-state', 'paused');
     dragonPlayback.setVisible(false);
-    lionPlayback.setVisible(false);
+    friendPlayback.setVisible(false);
     tablePlayback.setVisible(false);
     cancelAnimationFrame(particleRaf);
     particleRaf = null;
-    stopCardSparks();
-    if (hubAnimObserver) { hubAnimObserver.disconnect(); hubAnimObserver = null; }
   }
 
   // Pause animations when page is hidden
-  document.addEventListener('visibilitychange', () => {
+  function onVisibilityChange() {
+    hubEl.style.setProperty('--hub-motion-state', hubVisible && !document.hidden ? 'running' : 'paused');
     if (document.hidden) {
       cancelAnimationFrame(particleRaf);
       particleRaf = null;
     } else if (hubVisible) {
       animateParticles();
     }
-  });
-
-  // ── Card Sparks (lightweight DOM particles) ────────────────────
-  const sparkTimers = [];
-
-  function startCardSparks() {
-    // Stagger spark emission per card
-    const offsets = [0, 400, 700, 1100];
-    const containers = ['hub-sparks-quick'];
-    containers.forEach((id, i) => {
-      const el = get(id);
-      if (!el) return;
-      const timer = setInterval(() => {
-        if (!hubVisible || document.hidden) return;
-        emitSpark(el);
-      }, 1200 + offsets[i]);
-      sparkTimers.push(timer);
-    });
   }
-
-  function stopCardSparks() {
-    sparkTimers.forEach(t => clearInterval(t));
-    sparkTimers.length = 0;
-  }
-
-  function emitSpark(container) {
-    // Reuse existing hidden sparks or create new
-    const existing = container.querySelectorAll('.hub-spark:not(.active)');
-    const spark = existing[0] || document.createElement('span');
-    spark.className = 'hub-spark active';
-    spark.style.cssText = `
-      position: absolute;
-      width: ${2 + Math.random() * 3}px;
-      height: ${2 + Math.random() * 3}px;
-      border-radius: 50%;
-      background: hsl(${40 + Math.random() * 20}deg, 90%, 75%);
-      left: ${10 + Math.random() * 80}%;
-      top: ${10 + Math.random() * 60}%;
-      pointer-events: none;
-      z-index: 10;
-      animation: hub-spark-fly 0.8s ease-out forwards;
-    `;
-    container.appendChild(spark);
-    spark.addEventListener('animationend', () => {
-      spark.classList.remove('active');
-      spark.remove();
-    }, { once: true });
-  }
-
-  // Add keyframe to document if not already present
-  if (!document.getElementById('hub-spark-style')) {
-    const style = document.createElement('style');
-    style.id = 'hub-spark-style';
-    style.textContent = `
-      @keyframes hub-spark-fly {
-        0%   { transform: translate(0, 0) scale(1); opacity: 1; }
-        100% { transform: translate(${(Math.random()-0.5)*30}px, -${10 + Math.random()*25}px) scale(0); opacity: 0; }
-      }
-    `;
-    document.head.appendChild(style);
-  }
-
-  // ── Intersection Observer to pause off-screen animations ───────
-  function observeHubVisibility() {
-    if (!window.IntersectionObserver) return;
-    hubAnimObserver = new IntersectionObserver(([entry]) => {
-      const cards = hubEl.querySelectorAll(
-        '.hub-card-glow, .hub-dragon-img, .hub-lions-img, .hub-table-img, ' +
-        '.hub-phoenix-img, .hub-phoenix-flare, .hub-phoenix-sun, .hub-pearl, ' +
-        '.hub-coin, .hub-mini-die, .hub-mist, .hub-card--quick .hub-card-label, ' +
-        '.hub-card--quick .hub-card-title, .hub-card--quick .hub-card-sub'
-      );
-      cards.forEach(c => {
-        c.style.animationPlayState = entry.isIntersecting ? 'running' : 'paused';
-      });
-    }, { threshold: 0.1 });
-    hubAnimObserver.observe(hubEl);
-  }
+  document.addEventListener('visibilitychange', onVisibilityChange);
 
   // ── Card Actions ───────────────────────────────────────────────
-  const cards = hubEl.querySelectorAll('.hub-card');
 
   function setCardBusy(card, busy) {
     card.setAttribute('aria-busy', String(busy));
@@ -437,6 +357,11 @@ export function createHub({ enterRoom, socket, audioEnabled, notice }) {
       document.getElementById('settings-toggle')?.click();
     });
   }
+
+  get('hub-account-settings-btn')?.addEventListener('click', () => {
+    document.getElementById('settings-toggle')?.click();
+  });
+  get('hub-account-news-btn')?.addEventListener('click', () => openModal('hub-news-dialog'));
 
   // ── Modal management ──────────────────────────────────────────
   function openModal(id) {
@@ -704,16 +629,15 @@ export function createHub({ enterRoom, socket, audioEnabled, notice }) {
 
   // ── Cleanup ────────────────────────────────────────────────────
   function cleanup() {
+    document.removeEventListener('visibilitychange', onVisibilityChange);
     dragonPlayback.cleanup();
-    lionPlayback.cleanup();
+    friendPlayback.cleanup();
     tablePlayback.cleanup();
     cancelAnimationFrame(particleRaf);
     particleRaf = null;
     clearInterval(adCountdownInterval);
     cancelAnimationFrame(adAnimFrame);
-    stopCardSparks();
     resizeObserver.disconnect();
-    if (hubAnimObserver) hubAnimObserver.disconnect();
   }
 
   return { showHub, hideHub, cleanup };

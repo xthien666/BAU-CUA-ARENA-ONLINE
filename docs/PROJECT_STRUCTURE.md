@@ -11,7 +11,7 @@ bau-cua-arena/
 │   ├── styles/base.css           # CSS nền tảng dùng chung
 │   └── features/
 │       ├── game/                 # Bàn chơi, mở bát, lịch sử và CSS
-│       ├── hub/                  # Sảnh, phát video và CSS
+│       ├── hub/                  # Sảnh, ảnh động WebP, video mobile và CSS
 │       ├── auth/                 # Đăng nhập/đăng ký và CSS
 │       ├── account/              # Hồ sơ, ví và CSS
 │       └── admin/                # Giao diện quản trị, dialog và CSS
@@ -36,8 +36,8 @@ bau-cua-arena/
 │   ├── repositories/             # Truy vấn và thanh toán
 │   ├── services/                 # Nghiệp vụ, Auth, Admin và khởi động dev
 │   └── browser/                  # Kiểm tra trình duyệt thủ công và fixture QA
-├── public/assets/                # Ảnh, video và âm thanh được phục vụ công khai
-├── videos/                       # Nguồn video gốc và công cụ dựng lại
+├── public/assets/                # Ảnh, WebP, video mobile và âm thanh công khai
+├── media-sources/hub/            # Video nguồn cục bộ, không đưa vào Git/Docker
 └── docs/
     ├── ASSET_CREDITS.md           # Nguồn và ghi chú tài nguyên
     └── archive/                  # Prompt thiết kế cũ để tham khảo
@@ -70,4 +70,13 @@ Docker build cả hai trang HTML và đóng gói `server/`, `config/`, `scripts/
 | `public/assets/arena/` | `symbol-bau.jpg`, `symbol-ca.jpg`, `symbol-cua.jpg`, `symbol-ga.jpg`, `symbol-nai.jpg`, `symbol-tom.jpg` |
 | `public/assets/audio/` | `tet1.mp3` |
 
-Nguồn video có thể chỉnh sửa trong `videos/` và ghi chú nguồn tài nguyên trong `docs/ASSET_CREDITS.md` được giữ lại để tiếp tục phát triển.
+## Dọn animation trước khi push Git
+
+- Giữ 8 ảnh WebP dùng cho ba thẻ đầu, cùng nền sảnh, phượng hoàng và hai khung SVG. Thẻ Chơi với bạn dùng vòng lặp v5 ở tốc độ 1,5× cho desktop, fallback mobile và đúng một MP4 mobile nhẹ.
+- Xóa các MP4/WebM và poster phiên bản cũ khỏi `public/`, code phát MP4, test của code đó, script nén MP4 cũ và các lớp CSS trang trí không còn trong HTML.
+- Xóa thư mục dựng rồng, ảnh QA, snapshot và scaffold lân cũ. Đợt dọn này xóa 69 file, khoảng 25,38 MiB.
+- Xóa bốn ảnh bàn/xúc xắc không còn tham chiếu; giữ các mặt xúc xắc, chip và avatar được tạo đường dẫn động.
+- Gỡ các đường dẫn MP3 hiệu ứng vật phẩm không tồn tại; tiếp tục dùng âm thanh tổng hợp đã có.
+- Ba video gốc được chuyển nguyên vẹn vào `media-sources/hub/`, có kiểm tra SHA-256 trước/sau. Thư mục này, `.tools/`, `.env`, `node_modules/` và `dist/` không đưa vào Git.
+
+`npm run build` dùng WebP và MP4 mobile đã có sẵn nên bản clone không cần FFmpeg hoặc video nguồn. Nếu cần dựng lại, cung cấp ba video vào `media-sources/hub/` rồi chạy `node scripts/build-hub-motion.js`; thêm `--friend-only` để chỉ dựng video, ảnh động và poster Chơi với bạn. Kiểm tra nguồn mà không render bằng `node scripts/build-hub-motion.js --check-sources`. Có thể đặt `HUB_MOTION_SOURCE_DIR` để dùng nguồn ngoài dự án và `FFMPEG_PATH` để chỉ định FFmpeg.

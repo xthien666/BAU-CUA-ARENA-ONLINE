@@ -8,6 +8,10 @@ Game bầu cua chơi chung phòng trên điện thoại và laptop, tối đa **
 Yêu cầu Node.js 24.x, npm và PostgreSQL (máy development hiện dùng PostgreSQL 18).
 Tạo `bau_cua_dev`, `bau_cua_test` và cấu hình `.env` theo `.env.example` nếu chạy trên máy mới. Không ghi mật khẩu hay khóa MFA vào Git.
 
+Có thể chạy PostgreSQL 18.6 bằng Docker Compose trên cổng 5433; xem [hướng dẫn database Docker](docs/POSTGRES_DOCKER.md). Frontend và backend vẫn chạy bằng Node.js trên máy.
+
+Thành viên nhóm cài máy mới hoặc đăng nhập trang quản trị: [hướng dẫn cài đặt và đăng nhập Admin web](docs/HUONG_DAN_CAI_DAT_VA_DANG_NHAP_ADMIN.md).
+
 ```sh
 npm ci
 npm run db:migrate
@@ -65,7 +69,8 @@ Chi tiết giao tiếp: [docs/REALTIME_PROTOCOL.md](docs/REALTIME_PROTOCOL.md).
 - `server/`: backend và điểm khởi động `index.js`; `db/`, `repositories/`, `services/` chứa code PostgreSQL và nghiệp vụ.
 - `config/`: cấu hình trò chơi; `migrations/`: các thay đổi schema theo thứ tự.
 - `scripts/`: lệnh phát triển, migration và quản trị; `tests/`: kiểm thử theo nhóm client, server, DB và trình duyệt.
-- `public/`: tài nguyên được phục vụ cho người chơi; `videos/`: nguồn video có thể chỉnh sửa.
+- `public/`: tài nguyên được phục vụ cho người chơi, gồm ảnh động WebP của sảnh và một MP4 nhẹ cho thẻ Chơi với bạn trên điện thoại.
+- `media-sources/hub/`: ba video nguồn cục bộ để dựng lại ảnh động; đã loại khỏi Git và Docker. Bản clone dùng WebP và MP4 đã có trong `public/` để chạy và build, không cần video nguồn hoặc FFmpeg.
 - `docs/`: tài liệu, ghi nguồn tài nguyên và tài liệu thiết kế cũ trong `archive/`.
 
 Xem [cấu trúc chi tiết và danh sách file đã dọn](docs/PROJECT_STRUCTURE.md). Các lệnh npm giữ nguyên; chạy server trực tiếp bằng `node server/index.js`.
@@ -82,7 +87,7 @@ npm run build
 ## Đưa lên Internet và thuyết trình
 
 - [Hướng dẫn Render](docs/DEPLOY_RENDER.md) — triển khai cùng một dịch vụ cho web và Socket.IO.
-- [Kịch bản thuyết trình 7 phút](docs/PRESENTATION.md) — demo trước, giải thích kiến trúc sau.
+- [Tổng hợp chức năng và sơ đồ](docs/TONG_HOP_CHUC_NANG_VA_SO_DO.md) — tài liệu tham khảo cho phần trình bày.
 - Có `Dockerfile` để chạy trên VPS: `docker build -t bau-cua-arena .`, rồi `docker run --rm -p 3000:3000 bau-cua-arena`.
 
 Chưa có URL Internet được triển khai trong lần làm này; cần tài khoản hosting của bạn. `render.yaml` chỉ là cấu hình, không tự tạo dịch vụ hoặc phát sinh thanh toán.

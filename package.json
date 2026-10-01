@@ -11,7 +11,7 @@
     "prestart": "npm run build",
     "start": "node server/index.js",
     "test": "npm run test:all",
-    "test:core": "node --test tests/client/admin-dialog.test.js tests/server/automatic.test.js tests/server/database-game-integration.test.js tests/server/game.test.js tests/client/history.test.js tests/server/media.test.js tests/server/multiplayer.test.js",
+    "test:core": "node --test tests/client/admin-dialog.test.js tests/client/hub-motion.test.js tests/client/hub-motion-assets.test.js tests/client/friend-motion.test.js tests/server/automatic.test.js tests/server/database-game-integration.test.js tests/server/game.test.js tests/client/history.test.js tests/server/media.test.js tests/server/multiplayer.test.js",
     "test:db": "node scripts/run-db-tests.js",
     "test:all": "npm run test:core && npm run test:db",
     "build": "vite build",

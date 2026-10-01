@@ -13,6 +13,8 @@ let usersOffset = 0;
 let auditOffset = 0;
 let usersTotal = 0;
 let auditTotal = 0;
+let cleanupPreview = null;
+let cleanupVersion = 0;
 const LIMIT = 20;
 const mutationIds = new Map();
 const actionDialog = createAdminDialog({
@@ -183,9 +185,9 @@ el('logout-button').onclick = signOut;
 el('retry-account').onclick = signOut;
 
 async function switchView(name) {
-  if (!['overview', 'users', 'rooms', 'override', 'audit'].includes(name)) name = 'overview';
+  if (!['overview', 'users', 'rooms', 'override', 'audit', 'cleanup'].includes(name)) name = 'overview';
   currentView = name;
-  const titles = { overview: 'Tổng quan', users: 'Người chơi', rooms: 'Phòng chơi', override: 'Kết quả ván', audit: 'Nhật ký' };
+  const titles = { overview: 'Tổng quan', users: 'Người chơi', rooms: 'Phòng chơi', override: 'Kết quả ván', audit: 'Nhật ký', cleanup: 'Dọn dữ liệu' };
   document.querySelectorAll('[data-section]').forEach(section => { section.hidden = section.dataset.section !== name; section.classList.toggle('is-active', !section.hidden); });
   document.querySelectorAll('[data-view]').forEach(button => {
     const active = button.dataset.view === name;
@@ -360,6 +362,81 @@ async function loadAudit() {
 el('audit-filter-form').onsubmit = event => { event.preventDefault(); auditOffset = 0; refresh('audit'); };
 el('audit-prev').onclick = () => { auditOffset = Math.max(0, auditOffset - LIMIT); refresh('audit'); };
 el('audit-next').onclick = () => { auditOffset += LIMIT; refresh('audit'); };
+
+function invalidateCleanup() {
+  cleanupVersion += 1;
+  cleanupPreview = null;
+  el('cleanup-preview').hidden = true;
+  el('cleanup-confirmation').value = '';
+  el('cleanup-execute').disabled = true;
+}
+function updateCleanupButton() {
+  el('cleanup-execute').disabled = !cleanupPreview || cleanupPreview.expiresAt < Date.now()
+    || el('cleanup-confirmation').value !== 'XOA VINH VIEN'
+    || !['rooms', 'users', 'audit'].some(key => cleanupPreview.counts[key] > 0);
+}
+el('cleanup-preview-form').addEventListener('input', invalidateCleanup);
+el('cleanup-confirmation').addEventListener('input', updateCleanupButton);
+el('cleanup-preview-form').onsubmit = event => {
+  event.preventDefault();
+  if (!event.currentTarget.reportValidity()) return;
+  invalidateCleanup();
+  const version = cleanupVersion;
+  const body = { retentionDays: Number(el('cleanup-days').value), categories: Object.fromEntries(['rooms', 'users', 'audit'].map(key => [key, el(`cleanup-${key}`).checked])) };
+  el('cleanup-result').hidden = true;
+  busy(event.currentTarget.querySelector('button[type=submit]'), async () => {
+    state('cleanup', true);
+    try {
+      const data = await api('/api/admin/cleanup/preview', { method: 'POST', body });
+      if (version !== cleanupVersion) return;
+      cleanupPreview = data;
+      el('cleanup-cutoff').textContent = `Chỉ dọn dữ liệu đủ điều kiện trước ${date(data.cutoff)}. Database hiện ${(data.databaseBytes / 1024 / 1024).toFixed(1)} MB.`;
+      el('cleanup-counts').replaceChildren(...[['rooms', 'Phòng đã đóng'], ['users', 'Người chơi đã xóa mềm'], ['audit', 'Nhật ký cũ']].map(([key, label]) => {
+        const item = node('div', '', 'cleanup-count'); item.append(node('strong', number(data.counts[key])), node('span', label)); return item;
+      }));
+      el('cleanup-skipped').textContent = data.skippedUsers
+        ? `${number(data.skippedUsers)} người chơi đã xóa mềm chưa được chọn vì còn dữ liệu liên quan cần giữ hoặc vượt giới hạn lượt dọn.`
+        : 'Chỉ xóa người chơi không còn liên quan đến phòng, cược hoặc dữ liệu cần giữ.';
+      const labels = { rounds: 'Ván chơi', bets: 'Khoản cược', results: 'Kết quả người chơi', memberships: 'Thành viên phòng', wallets: 'Ví', transactions: 'Giao dịch của tài khoản sẽ xóa', sessions: 'Phiên đăng nhập', tokens: 'Token tài khoản', rewards: 'Phiên quà tặng', commands: 'Lệnh của dữ liệu đã kết thúc' };
+      el('cleanup-related').replaceChildren(...Object.entries(labels).flatMap(([key, label]) => [node('dt', label), node('dd', number(data.counts[key]))]));
+      el('cleanup-preview').hidden = false;
+      state('cleanup', false);
+      updateCleanupButton();
+    } catch (error) {
+      state('cleanup', false, error.message);
+      if (error.status === 401) showLogin();
+      if (['MFA_REQUIRED', 'MFA_SETUP_REQUIRED'].includes(error.code)) await showMfa();
+    } finally { el('cleanup-loading').hidden = true; }
+  });
+};
+el('cleanup-execute-form').onsubmit = event => {
+  event.preventDefault();
+  if (!event.currentTarget.reportValidity() || !cleanupPreview) return;
+  const preview = cleanupPreview;
+  const version = cleanupVersion;
+  busy(el('cleanup-execute'), async () => {
+    try {
+      const confirmed = await actionDialog.ask({ title: 'Xóa vĩnh viễn dữ liệu cũ',
+        message: `Xóa ${number(preview.counts.rooms)} phòng, ${number(preview.counts.users)} người chơi và ${number(preview.counts.audit)} nhật ký cùng dữ liệu liên quan đã xem trước. Thao tác không thể hoàn tác trên web.`,
+        requireReason: true, confirmLabel: 'Xóa vĩnh viễn' });
+      if (!confirmed.confirmed) return;
+      if (version !== cleanupVersion || el('cleanup-confirmation').value !== 'XOA VINH VIEN') throw new Error('Phạm vi đã thay đổi. Hãy xem trước lại.');
+      const result = await mutation('/api/admin/cleanup', { previewToken: preview.previewToken, confirmation: 'XOA VINH VIEN', reason: confirmed.reason });
+      invalidateCleanup();
+      el('cleanup-result').textContent = `Đã dọn ${number(result.counts.rooms)} phòng, ${number(result.counts.users)} người chơi và ${number(result.counts.audit)} nhật ký. Tài khoản Admin và dữ liệu đang hoạt động được giữ. Xem trước lại nếu muốn dọn lượt tiếp theo.`;
+      el('cleanup-result').hidden = false;
+      state('cleanup', false);
+      toast('Đã dọn dữ liệu và lưu nhật ký thao tác.');
+      usersOffset = 0; auditOffset = 0; selectedUser = null;
+      el('user-detail-content').hidden = true; el('user-detail-empty').hidden = false;
+    } catch (error) {
+      state('cleanup', false, error.message);
+      if (['PREVIEW_CHANGED', 'PREVIEW_EXPIRED', 'PREVIEW_INVALID'].includes(error.code)) invalidateCleanup();
+      if (error.status === 401) showLogin();
+      if (['MFA_REQUIRED', 'MFA_SETUP_REQUIRED'].includes(error.code)) await showMfa();
+    }
+  }).finally(updateCleanupButton);
+};
 window.addEventListener('hashchange', () => { if (user?.role === 'admin') switchView(location.hash.slice(1)); });
 try { await acceptSession(await api('/api/auth/me')); }
 catch (error) { showLogin(error.status === 401 ? undefined : error.message); }

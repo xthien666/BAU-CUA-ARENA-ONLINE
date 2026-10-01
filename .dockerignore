@@ -5,6 +5,6 @@ dist
 *.log
 docs
 tests
-videos
+media-sources
 .tools
 scratch

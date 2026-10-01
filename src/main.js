@@ -68,12 +68,42 @@ let currentAccount = null;
 
 function renderAccountState(user) {
   const signedIn = Boolean(user);
-  for (const id of ['hub-auth-register', 'hub-auth-login', 'hub-auth-forgot']) {
-    if (ui[id]) ui[id].hidden = signedIn;
-  }
+  if (ui['hub-auth-guest']) ui['hub-auth-guest'].hidden = signedIn;
+  document.querySelector('.hub-auth-banner')?.classList.toggle('is-signed-in', signedIn);
   if (ui['hub-auth-account']) ui['hub-auth-account'].hidden = !signedIn;
   if (ui['hub-auth-account-name']) ui['hub-auth-account-name'].textContent = user?.displayName || '';
+  if (ui['hub-auth-account-name']) ui['hub-auth-account-name'].title = user?.displayName || '';
+  ui['hub-auth-profile']?.setAttribute('aria-label', `Mở hồ sơ và ví của ${user?.displayName || 'bạn'}`);
+  if (ui['hub-account-avatar']) {
+    const avatar = ['bau', 'cua', 'tom', 'ca', 'ga', 'nai'].includes(user?.avatarKey) ? user.avatarKey : 'ga';
+    ui['hub-account-avatar'].src = `/assets/arena/symbol-${avatar}.png`;
+  }
+  renderHubBalance(user?.balance);
+  if (ui['hub-auth-logout']) ui['hub-auth-logout'].hidden = !signedIn;
+  if (ui['hub-settings-btn']) ui['hub-settings-btn'].hidden = signedIn;
   if (ui['hub-auth-admin']) ui['hub-auth-admin'].hidden = user?.role !== 'admin';
+}
+
+function renderHubBalance(balance) {
+  if (ui['hub-account-balance']) {
+    const label = Number.isSafeInteger(balance) && balance >= 0 ? number(balance) : '…';
+    ui['hub-account-balance'].textContent = label;
+    ui['hub-account-balance'].classList.toggle('is-long-balance', label.length > 14);
+    ui['hub-account-balance'].title = `${label} chip`;
+  }
+}
+
+async function refreshHubBalance() {
+  const accountId = currentAccount?.id;
+  if (!accountId || !auth) return;
+  try {
+    const profile = await auth.request('/api/me');
+    if (currentAccount?.id !== accountId) return;
+    currentAccount = { ...currentAccount, balance: profile.balance };
+    renderHubBalance(profile.balance);
+  } catch {
+    // Keep the last server-confirmed balance when the account API is unavailable.
+  }
 }
 
 function connectForAccount() {
@@ -260,21 +290,7 @@ function playSound(type) {
 
 function playItemSound(itemType) {
   if (!audioEnabled) return;
-  const audioFiles = {
-    egg: ['/assets/audio/egg-splat.mp3', '/assets/audio/item-egg.mp3'],
-    tomato: ['/assets/audio/tomato-splat.mp3', '/assets/audio/item-tomato.mp3'],
-    flower: ['/assets/audio/flower-gift.mp3', '/assets/audio/item-flower.mp3', '/assets/audio/flower.mp3'],
-  };
-  const candidates = audioFiles[itemType] || [];
-  for (const src of candidates) {
-    try {
-      const audio = new Audio(src);
-      audio.volume = 0.7;
-      const playPromise = audio.play();
-      if (playPromise?.catch) playPromise.catch(() => {});
-      break;
-    } catch { }
-  }
+  // Item effects use the existing synthesized sounds; no missing MP3 downloads.
   playSound(itemType);
 }
 
@@ -584,6 +600,10 @@ function applyState(next) {
   if (ui['round-phase-label']) ui['round-phase-label'].textContent = phaseNames[room.phase] || 'ĐANG LẮC BẦU...';
 
   const spendableBalance = availableBalance();
+  if (currentAccount) {
+    currentAccount = { ...currentAccount, balance: spendableBalance };
+    renderHubBalance(spendableBalance);
+  }
   ui['balance'].textContent = covered ? '•••' : number(spendableBalance);
   if (ui['available-balance']) ui['available-balance'].textContent = number(spendableBalance);
   ui['total-bet'].textContent = number(totalBet());
@@ -1217,6 +1237,7 @@ function clearRoom(message) {
   bowl.reset();
   document.body.classList.remove('in-room');
   room = null;
+  void refreshHubBalance();
   synced = false;
   busy = false;
   acceptingMembership = false;
@@ -2013,7 +2034,7 @@ async function initialize() {
   // in the DOM for room/session compatibility, but never present it as a gate.
   currentAccount = await auth.restoreSession();
   createAccountPanel({ auth,
-    onProfile: user => { currentAccount = user; renderAccountState(user); if (ui['player-name']) ui['player-name'].value = user.displayName; },
+    onProfile: user => { currentAccount = { ...currentAccount, ...user }; renderAccountState(currentAccount); if (ui['player-name']) ui['player-name'].value = user.displayName; void refreshHubBalance(); },
     onSignedOut: () => { currentAccount = null; socket.disconnect(); clearRoom('Phiên đã được thu hồi. Hãy đăng nhập lại.'); renderAccountState(null); auth.openAuth('login'); },
   });
   const playerName = currentAccount?.displayName || directPlayerName();

@@ -4,6 +4,7 @@ import { AdminService, AdminServiceError } from './services/AdminService.js';
 import { GamePersistenceService } from './services/GamePersistenceService.js';
 import { MfaError, MfaService } from './services/MfaService.js';
 import { createAccountMailer } from './email.js';
+import { DatabaseCleanupService } from './services/DatabaseCleanupService.js';
 
 const SESSION_COOKIE = 'bc_session';
 const CSRF_COOKIE = 'bc_csrf';
@@ -147,6 +148,7 @@ function safeError(res, error) {
 }
 
 function createHttpHandler({ authService, adminService, mfaService, persistence, mailer }) {
+  const cleanupService = new DatabaseCleanupService();
   function disconnectSessions(runtime, userId, sessionId = null) {
     for (const socket of runtime.io.sockets.sockets.values()) {
       const identity = socket.data.identity;
@@ -360,6 +362,20 @@ function createHttpHandler({ authService, adminService, mfaService, persistence,
         csrf: !['GET', 'HEAD'].includes(method),
       });
       const actorId = adminIdentity.userId;
+
+      if (url.pathname === '/api/admin/cleanup/preview' && method === 'POST') {
+        const body = await readJson(req);
+        const data = await cleanupService.preview({ ...body, actorId, excludedRoomIds: [...runtime.game.rooms.keys()] });
+        sendJson(res, 200, { data });
+        return true;
+      }
+      if (url.pathname === '/api/admin/cleanup' && method === 'POST') {
+        const body = await readJson(req);
+        const data = await cleanupService.execute({ actorId, previewToken: body.previewToken, confirmation: body.confirmation,
+          requestId: requestId(body), reason: reason(body), ipAddress: requestIp(req), excludedRoomIds: [...runtime.game.rooms.keys()] });
+        sendJson(res, 200, { data });
+        return true;
+      }
 
       if (url.pathname === '/api/admin/overview' && method === 'GET') {
         const overview = await adminService.getOverview({ actorId });

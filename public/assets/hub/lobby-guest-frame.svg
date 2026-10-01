@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="90" viewBox="0 0 1000 90" preserveAspectRatio="none" fill="none">
+  <defs>
+    <linearGradient id="metal" x2="0" y2="1" gradientUnits="objectBoundingBox"><stop stop-color="#fff9dc"/><stop offset=".08" stop-color="#d6ba8e"/><stop offset=".34" stop-color="#866343"/><stop offset=".51" stop-color="#412a1b"/><stop offset=".76" stop-color="#21130f"/><stop offset=".94" stop-color="#7b5432"/><stop offset="1" stop-color="#f4d391"/></linearGradient>
+    <linearGradient id="edge" x2="0" y2="1"><stop stop-color="#fffbeb"/><stop offset=".52" stop-color="#9a7850"/><stop offset="1" stop-color="#fff2b9"/></linearGradient>
+    <linearGradient id="shine" x2="0" y2="1"><stop stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+    <pattern id="facets" width="32" height="24" patternUnits="userSpaceOnUse"><path d="m0 0 16 12L32 0M0 24l16-12 16 12" stroke="#fff0c7" stroke-opacity=".07"/><path d="m0 0 16 12L0 24M32 0 16 12l16 12" fill="#160b08" fill-opacity=".12"/></pattern>
+  </defs>
+  <path d="M2 1h996l-35 44q-10 13-29 13H66q-19 0-29-13Z" fill="url(#metal)" stroke="url(#edge)" stroke-width="2"/>
+  <path d="M191 1h618l-24 65q-4 11-18 11H233q-14 0-18-11Z" fill="url(#metal)" stroke="url(#edge)" stroke-width="2"/>
+  <path d="M194 2h612l-24 64q-4 9-15 9H233q-11 0-15-9Z" fill="url(#facets)"/>
+  <path d="M20 3h960l-12 15H32Z" fill="url(#shine)"/>
+  <path d="M68 53h141m582 0h141" stroke="#fff5cd" stroke-opacity=".55" stroke-width="2"/>
+</svg>

@@ -152,7 +152,13 @@ async function findRequestAudit(client, actorId, requestId) {
      WHERE admin_id = $1 AND request_id = $2`,
     [actorId, requestId]
   );
-  return result.rows[0] ?? null;
+  if (result.rows[0]) return result.rows[0];
+  const archived = await client.query(
+    'SELECT 1 FROM admin_request_tombstones WHERE admin_id=$1 AND request_id=$2',
+    [actorId, requestId]
+  );
+  if (archived.rowCount) fail('REQUEST_ID_EXPIRED', 'Yêu cầu này đã được xử lý và nhật ký đã dọn. Không thể thực hiện lại yêu cầu cũ.');
+  return null;
 }
 
 function duplicateMutationResult(existing, { action, targetType, targetId }) {

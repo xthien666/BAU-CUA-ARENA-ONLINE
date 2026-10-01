@@ -125,11 +125,15 @@ test('HTTP and Socket.IO enforce cookies, CSRF, Origin, admin MFA and logout', a
     const headers = { Cookie: cookie, 'Content-Type': 'application/json', Origin: base };
     assert.equal((await fetch(`${base}/api/me`, { headers: { Cookie: 'bc_session=invalid' } })).status, 401);
     assert.equal((await fetch(`${base}/api/admin/overview`, { headers })).status, 403);
+    const cleanupBody=JSON.stringify({retentionDays:30,categories:{rooms:true}});
+    assert.equal((await fetch(`${base}/api/admin/cleanup/preview`, {method:'POST',headers:{...headers,'X-CSRF-Token':data.csrfToken},body:cleanupBody})).status,403);
     assert.equal((await fetch(`${base}/api/auth/logout`, { method: 'POST', headers, body: '{}' })).status, 403);
     assert.equal((await fetch(`${base}/api/auth/logout`, { method: 'POST', headers: { ...headers, 'X-CSRF-Token': data.csrfToken, Origin: 'https://foreign.example' }, body: '{}' })).status, 403);
     await query("UPDATE users SET role='admin' WHERE id=$1", [data.user.id]);
     const adminRejected = await fetch(`${base}/api/admin/overview`, { headers });
     assert.equal((await adminRejected.json()).error.code, 'MFA_SETUP_REQUIRED');
+    const cleanupMfa=await fetch(`${base}/api/admin/cleanup/preview`, {method:'POST',headers:{...headers,'X-CSRF-Token':data.csrfToken},body:cleanupBody});
+    assert.equal((await cleanupMfa.json()).error.code,'MFA_SETUP_REQUIRED');
     const secureHeaders = { ...headers, 'X-CSRF-Token': data.csrfToken };
     const setupResponse = await fetch(`${base}/api/auth/mfa/setup`, { method: 'POST', headers: secureHeaders, body: '{}' });
     const setup = (await setupResponse.json()).data;
@@ -137,6 +141,12 @@ test('HTTP and Socket.IO enforce cookies, CSRF, Origin, admin MFA and logout', a
     const verified = await fetch(`${base}/api/auth/mfa/verify-setup`, { method: 'POST', headers: secureHeaders, body: JSON.stringify({ code: __mfaTest.totp(setup.secret) }) });
     assert.equal(verified.status, 200);
     assert.equal((await fetch(`${base}/api/admin/overview`, { headers })).status, 200);
+    assert.equal((await fetch(`${base}/api/admin/cleanup/preview`, {method:'POST',headers,body:cleanupBody})).status,403);
+    const cleanupPreview=await fetch(`${base}/api/admin/cleanup/preview`,{method:'POST',headers:secureHeaders,body:cleanupBody});
+    assert.equal(cleanupPreview.status,200);
+    const previewData=(await cleanupPreview.json()).data;
+    const noConfirmation=await fetch(`${base}/api/admin/cleanup`,{method:'POST',headers:secureHeaders,body:JSON.stringify({previewToken:previewData.previewToken,confirmation:'NO',reason:'HTTP cleanup guard',requestId:randomUUID()})});
+    assert.equal((await noConfirmation.json()).error.code,'CONFIRMATION_REQUIRED');
     const target = await createAccount();
     const grant = { amount: 1234, reason: 'HTTP integration grant', requestId: randomUUID() };
     for (let retry = 0; retry < 2; retry++) {

@@ -81,7 +81,7 @@
       <!-- =====================================================
            GAME HUB — post-login main menu (shown after name entry)
            ===================================================== -->
-      <section id="hub" class="hub-view" hidden tabindex="-1" aria-labelledby="hub-heading">
+      <section id="hub" class="hub-view" data-force-motion="true" hidden tabindex="-1" aria-labelledby="hub-heading">
         <!-- Background layers -->
         <div class="hub-bg" aria-hidden="true">
           <div class="hub-bg-img"></div>
@@ -92,7 +92,7 @@
         <!-- Account entry bar inspired by the reference lobby. The existing
              auth dialog remains the single source of truth for all flows. -->
         <section class="hub-auth-banner" aria-label="Tài khoản Bầu Cua Arena">
-          <div class="hub-auth-actions">
+          <div id="hub-auth-guest" class="hub-auth-actions">
             <div class="hub-auth-brand">
               <img src="/assets/arena/logo1.png" alt="Bầu Cua Arena" class="hub-auth-logo" width="2079"
                 height="756" decoding="async" fetchpriority="high" />
@@ -108,16 +108,38 @@
               </svg>
               <span>QUÊN MẬT KHẨU</span>
             </button>
-            <div id="hub-auth-account" class="hub-auth-account" hidden>
-              <span>Xin chào, <strong id="hub-auth-account-name"></strong></span>
-              <button id="hub-auth-profile" type="button" class="hub-auth-button hub-auth-button--login">HỒ SƠ & VÍ</button>
-              <a id="hub-auth-admin" class="hub-auth-button hub-auth-button--register" href="/admin" hidden>QUẢN TRỊ</a>
-              <button id="hub-auth-logout" type="button" class="hub-auth-button hub-auth-button--login">ĐĂNG XUẤT</button>
+          </div>
+          <div id="hub-auth-account" class="hub-auth-account" hidden>
+            <div class="hub-account-identity hub-metal-panel">
+              <img src="/assets/arena/logo1.png" alt="Bầu Cua Arena" class="hub-account-logo" width="2079" height="756" decoding="async" />
+              <button id="hub-auth-profile" type="button" class="hub-account-profile" aria-label="Mở hồ sơ và ví">
+                <span class="hub-account-avatar"><img id="hub-account-avatar" src="/assets/arena/symbol-ga.png" alt="" width="96" height="96" /></span>
+                <strong id="hub-auth-account-name" class="hub-account-name"></strong>
+              </button>
+            </div>
+            <div class="hub-account-wallet" aria-label="Ví chip">
+              <span class="hub-wallet-coin" aria-hidden="true">$</span>
+              <div class="hub-wallet-value"><span class="sr-only">Số dư chip: </span><strong id="hub-account-balance">0</strong><span class="hub-wallet-caption">CHIP</span></div>
+              <button id="hub-account-wallet-btn" type="button" class="hub-wallet-plus" aria-label="Mở ví và lịch sử chip" title="Ví và lịch sử chip">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 4v16M4 12h16" /></svg>
+              </button>
+            </div>
+            <div class="hub-account-tools hub-metal-panel">
+              <button id="hub-account-news-btn" type="button" class="hub-account-tool">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4M12 2V1" /></svg>
+                <span>Tin Tức</span>
+              </button>
+              <button id="hub-account-settings-btn" type="button" class="hub-account-tool">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33 1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09A1.65 1.65 0 0 0 15 4.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/><circle cx="12" cy="12" r="3" fill="#4b301c" /></svg>
+                <span>Cài Đặt</span>
+              </button>
             </div>
           </div>
           <div class="hub-auth-underbar">
-            <p class="hub-auth-message">Bầu Cua Arena là game bầu cua truyền thống tiền trong game là chip 100% tiền ảo không nạp rút</p>
+            <p class="hub-auth-message"><span><strong>Bầu Cua Arena</strong> là game bầu cua truyền thống.</span><span>Tiền trong game là <strong>chip 100% tiền ảo</strong>, không nạp rút.</span></p>
             <div class="hub-header-actions" aria-label="Tiện ích">
+              <a id="hub-auth-admin" class="hub-account-link" href="/admin" hidden>Quản trị</a>
+              <button id="hub-auth-logout" type="button" class="hub-account-link" hidden>Đăng xuất</button>
               <button id="hub-sound-toggle" type="button" class="hub-icon-btn" aria-label="Âm thanh"
                 aria-pressed="true" title="Âm thanh">
                 <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
@@ -140,8 +162,7 @@
               <!-- Artwork layers -->
               <div class="hub-card-art" aria-hidden="true">
                 <div class="hub-layer hub-layer--character hub-layer--dragon">
-                  <img src="/assets/hub/quick-play-dragon-poster.webp" alt="" class="hub-dragon-poster" width="576" height="800" draggable="false" />
-                  <video id="hub-dragon-video" class="hub-dragon-video" data-src="/assets/hub/quick-play-dragon-loop.mp4" data-webm="/assets/hub/quick-play-dragon-loop.webm" data-force-motion="true" data-playback-rate="2.5" poster="/assets/hub/quick-play-dragon-poster.webp" width="576" height="800" preload="none" muted loop playsinline disablepictureinpicture disableremoteplayback tabindex="-1" aria-hidden="true"></video>
+                  <img id="hub-dragon-motion" src="/assets/hub/quick-play-dragon-poster-v3.webp" data-motion-src="/assets/hub/quick-play-dragon-motion-v3.webp" data-mobile-motion-src="/assets/hub/quick-play-dragon-motion-mobile-v3.webp" data-force-motion="true" alt="" class="hub-dragon-poster hub-motion-art" width="576" height="800" decoding="async" draggable="false" />
                 </div>
               </div>
               <!-- Label -->
@@ -159,19 +180,13 @@
             <div class="hub-card-inner">
               <div class="hub-card-frame" aria-hidden="true"></div>
               <div class="hub-card-art" aria-hidden="true">
-                <div class="hub-card-glow hub-card-glow--lion"></div>
-                <div class="hub-layer hub-layer--lion-img">
-                  <img src="/assets/hub/friends-lion-poster.webp" alt="" class="hub-lion-poster" draggable="false" />
-                  <video id="hub-lion-video" class="hub-lion-video"
-                    data-src="/assets/hub/friends-lion-loop.mp4"
-                    data-force-motion="true"
-                    poster="/assets/hub/friends-lion-poster.webp"
-                    muted loop playsinline preload="none" tabindex="-1"
-                    disablepictureinpicture disableremoteplayback aria-hidden="true"></video>
+                <div class="hub-layer hub-layer--friend-art">
+                  <img id="hub-friend-motion" src="/assets/hub/baucua-poster-v3.webp" data-motion-src="/assets/hub/baucua-motion-v5.webp" data-mobile-motion-src="/assets/hub/baucua-motion-mobile-v5.webp" data-force-motion="true" alt="" class="hub-friend-poster hub-motion-art" width="640" height="856" decoding="async" draggable="false" />
+                  <video id="hub-friend-clip" class="hub-friend-clip" data-src="/assets/hub/baucua-mobile-v5.mp4" poster="/assets/hub/baucua-poster-v3.webp" width="384" height="514" preload="none" muted loop playsinline disablepictureinpicture disableremoteplayback tabindex="-1" aria-hidden="true" hidden></video>
                 </div>
               </div>
               <div class="hub-card-label">
-                <span class="hub-card-title">Chơi với bạn</span>
+                <span class="hub-card-title" data-text="Chơi với bạn">Chơi với bạn</span>
                 <span class="hub-card-sub">Tạo / Vào phòng</span>
               </div>
               <div class="hub-card-loader" aria-hidden="true"><span class="hub-spinner"></span></div>
@@ -185,17 +200,11 @@
               <div class="hub-card-art" aria-hidden="true">
                 <div class="hub-card-glow hub-card-glow--table"></div>
                 <div class="hub-layer hub-layer--table-img">
-                  <img src="/assets/hub/choose-table-v1.jpg" alt="" class="hub-table-img" draggable="false" />
-                  <video id="hub-table-video" class="hub-table-video"
-                    data-src="/assets/hub/choose-table-lion.mp4"
-                    data-force-motion="true"
-                    poster="/assets/hub/choose-table-v1.jpg"
-                    muted loop playsinline preload="none" tabindex="-1"
-                    disablepictureinpicture disableremoteplayback aria-hidden="true"></video>
+                  <img id="hub-table-motion" src="/assets/hub/choose-table-lion-poster-v3.webp" data-motion-src="/assets/hub/choose-table-lion-motion-v3.webp" data-force-motion="true" alt="" class="hub-table-img hub-motion-art" width="480" height="646" decoding="async" draggable="false" />
                 </div>
               </div>
               <div class="hub-card-label">
-                <span class="hub-card-title">Chọn bàn</span>
+                <span class="hub-card-title" data-text="Chọn bàn">Chọn bàn</span>
                 <span class="hub-card-sub">Xem danh sách</span>
               </div>
               <div class="hub-card-loader" aria-hidden="true"><span class="hub-spinner"></span></div>
@@ -215,7 +224,7 @@
                 </div>
               </div>
               <div class="hub-card-label">
-                <span class="hub-card-title">Game khác</span>
+                <span class="hub-card-title" data-text="Game khác">Game khác</span>
                 <span class="hub-card-sub">Sắp ra mắt</span>
               </div>
               <div class="hub-card-loader" aria-hidden="true"><span class="hub-spinner"></span></div>
@@ -879,6 +888,22 @@
   </dialog>
 
   <!-- Modal: Cảnh báo -->
+  <dialog id="hub-news-dialog" class="hub-modal" aria-labelledby="hub-news-title">
+    <div class="hub-modal-card">
+      <div class="hub-modal-header">
+        <h2 id="hub-news-title" class="hub-modal-title">Tin Tức</h2>
+        <button type="button" class="hub-modal-close" aria-label="Đóng tin tức" data-close-modal="hub-news-dialog">×</button>
+      </div>
+      <div class="hub-modal-body hub-news-body">
+        <h3>Chào mừng đến với Bầu Cua Arena</h3>
+        <p>Chọn Chơi nhanh để vào bàn, hoặc Chọn bàn để tìm phòng cùng bạn bè.</p>
+        <h3>Ví chip chung</h3>
+        <p>Nhấn vào dấu + trên ví để xem số dư và lịch sử chip. Bạn có thể đổi tên và avatar trong hồ sơ.</p>
+        <p class="hub-news-note">Chip trong game là tiền ảo, không có chức năng nạp rút.</p>
+      </div>
+    </div>
+  </dialog>
+
   <dialog id="hub-alert-dialog" class="hub-modal" aria-labelledby="hub-alert-title">
     <div class="hub-modal-card">
       <div class="hub-modal-header">
